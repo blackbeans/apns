@@ -2,57 +2,61 @@ package entry
 
 import (
 	"bytes"
+	"encoding/binary"
+	"log"
+	"reflect"
 )
-
-/*
- * 发送的一个数据包
- */
-type IData interface {
-	Marshal() []byte
-}
 
 //用于发送的push的Message
 type Message struct {
 	op     byte
 	length int32
-	items  []Item
+	items  []*Item
 }
 
-func NewMessage() *Message {
-	msg := &Message{op: CMD_POP}
-	msg.items = make([]item, 0, 2)
+func NewMessage(op byte) *Message {
+	msg := &Message{op: op}
+	msg.items = make([]*Item, 0, 2)
 	return msg
 }
 
 func (self *Message) AddItem(items ...*Item) {
-	self.items = append(self.items, items)
+	self.items = append(self.items, items...)
 }
 
-func (self *Message) Encode() []byte {
-	frame := make([]byte)
-	buff := bytes.NewBuffer(frame)
-	//frame 的command类型 2
-	buff.WriteByte(self.op)
+func (self *Message) Encode() (error, []byte) {
 
-	dbuffer := bytes.NewBuffer(data)
+	framebuff := new(bytes.Buffer)
+	//write item body
 	for _, v := range self.items {
-		dbuffer.WriteByte(v.id & 0xFF)
-		dbuffer.Write(v.length & 0xFFFF)
-		dbuffer.Write(v.data)
-	}
-	//frame length  4 bytes
-	buff.Write(dbuffer.Len() & 0xFFFFFFFF)
-	//frame的data body体
-	buff.Write(dbuffer.Bytes())
+		//如果是采用tlv形式的字节编码则写入类型、长度
+		datat := reflect.TypeOf(v.data).Kind()
+		if datat != reflect.Uint8 && datat != reflect.Uint16 &&
+			datat != reflect.Uint32 && datat != reflect.Uint64 {
+			binary.Write(framebuff, binary.BigEndian, v.length)
+		}
 
-	return buff.Bytes()
+		err := binary.Write(framebuff, binary.BigEndian, v.data)
+		if nil != err {
+			log.Printf("MESSAGE|ENCODE|FAIL|%s|%s", err.Error(), v)
+			return err, nil
+		}
+	}
+
+	buff := make([]byte, 0, 1+framebuff.Len())
+	bytebuff := bytes.NewBuffer(buff)
+	//frame 的command类型
+	binary.Write(bytebuff, binary.BigEndian, uint8(self.op))
+	//frame body
+	binary.Write(bytebuff, binary.BigEndian, framebuff.Bytes())
+	return nil, bytebuff.Bytes()
 
 }
 
 //发送的item
 //包含：device-token/payload/notification/expireation/priority
 type Item struct {
-	id     byte
-	length int
-	data   []byte
+	id     uint8
+	length uint16
+	data   interface{}
 }
