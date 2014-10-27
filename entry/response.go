@@ -8,12 +8,20 @@ import (
 
 const (
 	ERROR_RESPONSE = 1 + 1 + 4
+	FEEDBACK_RESP  = 4 + 2 + 32
 )
 
 //------------------feedback
 type Feedback struct {
 	Time        uint32
 	DeviceToken string
+}
+
+func NewFeedBack(data []byte) *Feedback {
+	feedback := &Feedback{}
+	feedback.Unmarshal(data)
+
+	return feedback
 }
 
 func (self *Feedback) Unmarshal(data []byte) {
@@ -25,7 +33,7 @@ func (self *Feedback) Unmarshal(data []byte) {
 	binary.Read(reader, binary.BigEndian, &tokenLength)
 	binary.Read(reader, binary.BigEndian, &tokenBuff)
 
-	self.DeviceToken = hex.EncodeToString(tokenBuff[0:tokenLength])
+	self.DeviceToken = hex.EncodeToString(tokenBuff)
 }
 
 //-----------------error respons

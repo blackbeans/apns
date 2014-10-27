@@ -10,11 +10,11 @@ import (
 
 type ApnsClient struct {
 	factory         IConnFactory
-	feedbackFactory IConnFactory
+	feedbackFactory IConnFactory //用于查询feedback的链接
 }
 
-func NewApnsClient(factory IConnFactory) *ApnsClient {
-	client := &ApnsClient{factory: factory}
+func NewApnsClient(factory IConnFactory, feedbackFactory IConnFactory) *ApnsClient {
+	client := &ApnsClient{factory: factory, feedbackFactory: feedbackFactory}
 	return client
 }
 
@@ -50,6 +50,13 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	return nil
 }
 
+func (self *ApnsClient) FetchFeedback(ch chan<- *entry.Feedback) {
+	conn := self.feedbackFactory.get()
+	defer self.feedbackFactory.release(conn)
+	conn.readFeedBack(ch)
+}
+
 func (self *ApnsClient) Destory() {
 	self.factory.close()
+	self.feedbackFactory.close()
 }

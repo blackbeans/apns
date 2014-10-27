@@ -106,6 +106,25 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 	return nil
 }
 
+func (self *ApnsConnection) readFeedBack(ch chan<- *entry.Feedback) {
+
+	buff := make([]byte, entry.FEEDBACK_RESP, entry.FEEDBACK_RESP)
+	for {
+		length, err := self.conn.Read(buff)
+		//如果已经读完数据那么久直接退出
+		if length == -1 || nil != err {
+			break
+		}
+
+		//读取的数据
+		feedback := entry.NewFeedBack(buff)
+		ch <- feedback
+		buff = buff[:entry.FEEDBACK_RESP]
+	}
+
+	//本次读取完毕
+}
+
 func (self *ApnsConnection) close() {
 	self.conn.Close()
 }
