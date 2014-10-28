@@ -4,20 +4,20 @@ import (
 	"crypto/tls"
 	"go-apns/entry"
 	"log"
+	"reflect"
 	"time"
 )
+
+type IConn interface {
+	Open() error
+	IsAlive() bool
+	Close()
+}
 
 const (
 	CONN_READ_BUFFER_SIZE  = 256
 	CONN_WRITE_BUFFER_SIZE = 512
 )
-
-//连接工厂
-type IConnFactory interface {
-	get() *ApnsConnection         //获取一个连接
-	release(conn *ApnsConnection) //释放对应的链接
-	close()                       //关闭当前的
-}
 
 type ApnsConnection struct {
 	cert         tls.Certificate //ssl证书
@@ -25,24 +25,27 @@ type ApnsConnection struct {
 	deadline     time.Duration
 	heartCheck   int32 //heart check
 	conn         *tls.Conn
-	responseChan chan<- *entry.Response
+	responseChan chan<- entry.Response
+	alive        bool //是否存活
 }
 
-func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, heartCheck int32) *ApnsConnection {
+func NewApnsConnection(responseChan chan<- entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, heartCheck int32) (error, *ApnsConnection) {
 
-	return &ApnsConnection{cert: certificates,
+	conn := &ApnsConnection{cert: certificates,
 		hostport:   hostport,
 		deadline:   deadline,
 		heartCheck: heartCheck}
+	return conn.Open(), conn
 }
 
-func (self *ApnsConnection) open() error {
+func (self *ApnsConnection) Open() error {
 	err := self.dial()
 	if nil != err {
 		return err
 	}
 	//启动读取数据
 	go self.waitRepsonse()
+	self.alive = true
 	return nil
 }
 
@@ -52,16 +55,20 @@ func (self *ApnsConnection) waitRepsonse() {
 	//同步读取当前conn的结果
 	length, err := self.conn.Read(buff[:entry.ERROR_RESPONSE])
 	if nil != err || length != len(buff) {
-		log.Printf("CONNECTION|READ RESPONSE|FAIL|%s\n", err)
-		self.responseChan <- nil
+		log.Printf("CONNECTION|%s|READ RESPONSE|FAIL|%s\n", self.name(), err)
 	} else {
 		response := &entry.Response{}
 		response.Unmarshal(buff)
-		self.responseChan <- response
+		self.responseChan <- *response
 	}
 
 	//已经读取到了错误信息直接关闭
-	self.close()
+	self.Close()
+
+}
+
+func (self *ApnsConnection) name() string {
+	return reflect.TypeOf(*self).Name()
 
 }
 
@@ -73,7 +80,7 @@ func (self *ApnsConnection) dial() error {
 	conn, err := tls.Dial("tcp", self.hostport, &config)
 	if nil != err {
 		//connect fail
-		log.Printf("CONNECTION|DIAL CONNECT|FAIL|%s|%s\n", self.hostport, err.Error())
+		log.Printf("CONNECTION|%s|DIAL CONNECT|FAIL|%s|%s\n", self.name(), self.hostport, err.Error())
 		return err
 	}
 
@@ -81,7 +88,7 @@ func (self *ApnsConnection) dial() error {
 	for {
 		state := conn.ConnectionState()
 		if state.HandshakeComplete {
-			log.Printf("CONNECTION|HANDSHAKE SUCC\n")
+			log.Printf("CONNECTION|%s|HANDSHAKE SUCC\n", self.name())
 			break
 		}
 		time.Sleep(1 * time.Second)
@@ -106,25 +113,13 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 	return nil
 }
 
-func (self *ApnsConnection) readFeedBack(ch chan<- *entry.Feedback) {
-
-	buff := make([]byte, entry.FEEDBACK_RESP, entry.FEEDBACK_RESP)
-	for {
-		length, err := self.conn.Read(buff)
-		//如果已经读完数据那么久直接退出
-		if length == -1 || nil != err {
-			break
-		}
-
-		//读取的数据
-		feedback := entry.NewFeedBack(buff)
-		ch <- feedback
-		buff = buff[:entry.FEEDBACK_RESP]
-	}
-
-	//本次读取完毕
+func (self *ApnsConnection) IsAlive() bool {
+	return self.alive
 }
 
-func (self *ApnsConnection) close() {
+func (self *ApnsConnection) Close() {
+
+	self.alive = false
 	self.conn.Close()
+	log.Printf("APNS CONNECTION|%s|CLOSED ...", self.name())
 }
