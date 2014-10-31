@@ -25,11 +25,11 @@ type ApnsConnection struct {
 	deadline     time.Duration
 	heartCheck   int32 //heart check
 	conn         *tls.Conn
-	responseChan chan<- entry.Response
+	responseChan chan<- *entry.Response
 	alive        bool //是否存活
 }
 
-func NewApnsConnection(responseChan chan<- entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, heartCheck int32) (error, *ApnsConnection) {
+func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, heartCheck int32) (error, *ApnsConnection) {
 
 	conn := &ApnsConnection{cert: certificates,
 		hostport:   hostport,
@@ -59,7 +59,7 @@ func (self *ApnsConnection) waitRepsonse() {
 	} else {
 		response := &entry.Response{}
 		response.Unmarshal(buff)
-		self.responseChan <- *response
+		self.responseChan <- response
 	}
 
 	//已经读取到了错误信息直接关闭
@@ -69,7 +69,6 @@ func (self *ApnsConnection) waitRepsonse() {
 
 func (self *ApnsConnection) name() string {
 	return reflect.TypeOf(*self).Name()
-
 }
 
 func (self *ApnsConnection) dial() error {

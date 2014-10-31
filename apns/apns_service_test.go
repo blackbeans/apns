@@ -13,7 +13,7 @@ const (
 	KEY_PATH        = "/Users/blackbeans/workspace/github/go-apns/key.pem"
 	PUSH_APPLE      = "gateway.push.apple.com:2195"
 	FEED_BACK_APPLE = "feedback.push.apple.com:2196"
-	apnsToken       = "f232e31293b0d63ba886787950eb912168f182e6c91bc6bdf39d162bf5d7697d"
+	apnsToken       = "bb9182d786ecc6878eae2a3a4c87e3fc1b4e8f861717210af8810384aa67369d"
 )
 
 func TestSendMessage(t *testing.T) {
@@ -25,7 +25,7 @@ func TestSendMessage(t *testing.T) {
 		return
 	}
 
-	ch := make(chan entry.Response, 1)
+	ch := make(chan *entry.Response, 1)
 	err, conn := NewApnsConnection(ch, cert, PUSH_APPLE, 5*time.Second, 1)
 
 	if nil != err {
@@ -33,7 +33,7 @@ func TestSendMessage(t *testing.T) {
 		return
 	}
 
-	feedbackChan := make(chan entry.Feedback, 100)
+	feedbackChan := make(chan *entry.Feedback, 100)
 	err, feedback := NewFeedbackConn(feedbackChan, cert, FEED_BACK_APPLE, 5*time.Second, 1)
 	if nil != err {
 		t.Fail()
@@ -86,8 +86,8 @@ func TestPoolSendMessage(t *testing.T) {
 		return
 	}
 
-	responseChan := make(chan entry.Response, 10)
-	feedbackChan := make(chan entry.Feedback, 1000)
+	responseChan := make(chan *entry.Response, 10)
+	feedbackChan := make(chan *entry.Feedback, 1000)
 
 	body := "hello apns"
 	payload := entry.NewSimplePayLoad("ms.caf", 1, body)

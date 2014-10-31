@@ -91,7 +91,7 @@ func (self *ConnPool) MonitorPool() (int, int, int) {
 func (self *ConnPool) Get(timeout time.Duration) (error, IConn) {
 
 	if !self.running {
-		return errors.New("flume pool has been stopped!"), nil
+		return errors.New("POOL_FACTORY|POOL IS SHUTDOWN"), nil
 	}
 
 	//***如果在等待的时间内没有获取到client则超时

@@ -17,8 +17,8 @@ type ApnsClient struct {
 }
 
 func NewDefaultApnsClient(cert tls.Certificate,
-	respChan chan entry.Response, pushGateway string,
-	feedbackChan chan entry.Feedback, feedbackGateWay string) *ApnsClient {
+	respChan chan<- *entry.Response, pushGateway string,
+	feedbackChan chan<- *entry.Feedback, feedbackGateWay string) *ApnsClient {
 
 	deadline := 10 * time.Second
 	heartCheck := int32(1)
@@ -104,13 +104,14 @@ func (self *ApnsClient) FetchFeedback() error {
 			log.Printf("APNS SERVICE|RELEASE CONN|FAIL")
 		}
 	}()
-
-	feedbackconn.readFeedBack()
+	go func() {
+		feedbackconn.readFeedBack()
+	}()
 	return nil
 }
 
 func (self *ApnsClient) Destory() {
-	self.factory.Shutdown()
 	self.feedbackFactory.Shutdown()
+	self.factory.Shutdown()
 	self.running = false
 }
