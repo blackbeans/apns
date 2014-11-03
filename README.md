@@ -54,7 +54,7 @@ quick start
 
 Http方式发送IOS PUSH
 ===================
------Server端使用：
+####Server端使用：
 
     import (
     "flag"
@@ -83,9 +83,7 @@ Http方式发送IOS PUSH
     测试启动：
     go run demo.go  -certPath=/Users/blackbeans/pushcert.pem -keyPath=/Users/blackbeans/key.pem -bindAddr=:17070 -runMode=1
 
-<<<<<<< HEAD
-
------Client端发起调用
+####Client端发起调用
     发送PUSH的POST协议：
     请求REQ：
         http://localhost:7070/apns/push
