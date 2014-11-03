@@ -83,10 +83,9 @@ Http方式发送IOS PUSH
     测试启动：
     go run demo.go  -certPath=/Users/blackbeans/pushcert.pem -keyPath=/Users/blackbeans/key.pem -bindAddr=:17070 -runMode=1
 
-
 Client端发起调用
 发送PUSH协议：
-POST：
+    POST：
     REQ：
     http://localhost:7070/apns/push
     pushType:= req.PostFormValue("pt") //notification 的类型
