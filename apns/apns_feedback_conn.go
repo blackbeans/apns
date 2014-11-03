@@ -41,10 +41,10 @@ func (self *FeedbackConn) name() string {
 	return reflect.TypeOf(*self).Name()
 }
 
-func (self *FeedbackConn) readFeedBack() {
+func (self *FeedbackConn) readFeedBack(limit int) {
 
 	buff := make([]byte, entry.FEEDBACK_RESP, entry.FEEDBACK_RESP)
-	for self.alive {
+	for self.alive && limit > 0 {
 		length, err := self.conn.Read(buff)
 		//如果已经读完数据那么久直接退出
 		if length == -1 || nil != err {
@@ -55,6 +55,7 @@ func (self *FeedbackConn) readFeedBack() {
 		//读取的数据
 		feedback := entry.NewFeedBack(buff)
 		self.feedbackChan <- feedback
+		limit--
 		buff = buff[:entry.FEEDBACK_RESP]
 	}
 	//本次读取完毕

@@ -32,6 +32,7 @@ func NewApnsHttpServer(option Option) *ApnsHttpServer {
 	http.HandleFunc("/apns/push", server.handlePush)
 	http.HandleFunc("/apns/feedback", server.handleFeedBack)
 	go func() {
+		log.Println("APNS HTTPSERVER IS STARTING ....")
 		err := http.ListenAndServe(option.bindAddr, nil)
 		if nil != err {
 			log.Panicf("APNSHTTPSERVER|LISTEN|FAIL|%s\n", err)

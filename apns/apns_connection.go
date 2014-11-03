@@ -100,7 +100,6 @@ func (self *ApnsConnection) dial() error {
 func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 
 	err, packet := msg.Encode()
-	log.Printf("%d|%t", len(packet), packet)
 	if nil != err {
 		return err
 	}

@@ -91,7 +91,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	return nil
 }
 
-func (self *ApnsClient) FetchFeedback() error {
+func (self *ApnsClient) FetchFeedback(limit int) error {
 	err, conn := self.feedbackFactory.Get(5 * time.Second)
 	if nil != err {
 		return err
@@ -105,7 +105,7 @@ func (self *ApnsClient) FetchFeedback() error {
 		}
 	}()
 	go func() {
-		feedbackconn.readFeedBack()
+		feedbackconn.readFeedBack(limit)
 	}()
 	return nil
 }

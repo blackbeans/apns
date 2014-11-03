@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	CERT_PATH       = "/Users/blackbeans/workspace/github/go-apns/pushcert.pem"
-	KEY_PATH        = "/Users/blackbeans/workspace/github/go-apns/key.pem"
+	CERT_PATH       = "/Users/blackbeans/pushcert.pem"
+	KEY_PATH        = "/Users/blackbeans/key.pem"
 	PUSH_APPLE      = "gateway.push.apple.com:2195"
 	FEED_BACK_APPLE = "feedback.push.apple.com:2196"
 	apnsToken       = "bb9182d786ecc6878eae2a3a4c87e3fc1b4e8f861717210af8810384aa67369d"
@@ -51,7 +51,7 @@ func TestSendMessage(t *testing.T) {
 
 	go func() {
 		//测试feedback
-		err := client.FetchFeedback()
+		err := client.FetchFeedback(50)
 		if nil != err {
 			t.Logf("FETCH FEEDBACK|FAIL |%s\n", err)
 		}
@@ -100,7 +100,7 @@ func TestPoolSendMessage(t *testing.T) {
 
 	go func() {
 		//测试feedback
-		err := client.FetchFeedback()
+		err := client.FetchFeedback(50)
 		if nil != err {
 			t.Logf("FETCH FEEDBACK|FAIL |%s\n", err)
 		}
