@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	CERT_PATH       = "/Users/blackbeans/workspace/github/go-apns/pushcert.pem"
-	KEY_PATH        = "/Users/blackbeans/workspace/github/go-apns/key.pem"
+	CERT_PATH       = "/Users/blackbeans/pushcert.pem"
+	KEY_PATH        = "/Users/blackbeans/key.pem"
 	PUSH_APPLE      = "gateway.push.apple.com:2195"
 	FEED_BACK_APPLE = "feedback.push.apple.com:2196"
-	apnsToken       = "b8cca5b914195a3441e09b69adc8e26c228e43d85be4f1d810481fca95b53d88"
+	apnsToken       = "68343efb 96b34a76 e404d334 add0b4b3 83c9f943 0b2a37bd 619bcad6 31a211da"
 	PROXY_URL       = "http://localhost:17070"
 )
 
@@ -38,6 +38,7 @@ func innerApsnHttpServerSend(t *testing.T) {
 	fmt.Println("innerApsnHttpServerSend is Starting")
 
 	data := make(url.Values)
+	data.Set("pt", NOTIFY_ENHANCED_FORMAT)
 	data.Set("token", apnsToken)
 	data.Set("sound", "ms.caf")
 	data.Set("badge", "10")
@@ -65,7 +66,7 @@ func innerApsnHttpServerSend(t *testing.T) {
 	var response response
 	err = json.Unmarshal(body, &response)
 	if nil != err {
-		fmt.Printf("HTTP Unmarshal RESPONSE FAIL !|%s\n", body)
+		fmt.Printf("innerApsnHttpServerSend|HTTP Unmarshal RESPONSE FAIL !|%s\n", body)
 		t.Fail()
 		return
 	}
@@ -101,7 +102,7 @@ func innerApsnHttpServerFeedback(t *testing.T) {
 	var response response
 	err = json.Unmarshal(body, &response)
 	if nil != err {
-		t.Logf("HTTP Unmarshal RESPONSE FAIL !|%s\n", err)
+		t.Logf("innerApsnHttpServerFeedback|HTTP Unmarshal RESPONSE FAIL !|%s\n", err)
 		t.Fail()
 		return
 	}

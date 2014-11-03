@@ -1,13 +1,11 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"go-apns/apns"
 	"go-apns/entry"
 	"log"
 	"net/http"
-	"reflect"
 	"strconv"
 )
 
@@ -53,8 +51,8 @@ func (self *ApnsHttpServer) Shutdown() {
 
 }
 
-func (self *ApnsHttpServer) handleFeedBack(resp http.ResponseWriter, req *http.Request) {
-	response := response{}
+func (self *ApnsHttpServer) handleFeedBack(out http.ResponseWriter, req *http.Request) {
+	response := &response{}
 	response.Status = RESP_STATUS_SUCC
 
 	if req.Method == "GET" {
@@ -66,7 +64,7 @@ func (self *ApnsHttpServer) handleFeedBack(resp http.ResponseWriter, req *http.R
 			response.Error = errors.New("Fetch Feedback Over limit 100 ")
 		} else {
 			//发起了获取feedback的请求
-			err := self.apnsClient.FetchFeedback()
+			err := self.apnsClient.FetchFeedback(int(limit))
 			if nil != err {
 				response.Error = err
 				response.Status = RESP_STATUS_ERROR
@@ -89,89 +87,37 @@ func (self *ApnsHttpServer) handleFeedBack(resp http.ResponseWriter, req *http.R
 		response.Error = errors.New("Unsupport Post method Invoke!")
 	}
 
-	self.write(resp, response)
-}
-
-func (self *ApnsHttpServer) write(out http.ResponseWriter, resp response) {
-	out.Header().Set("content-type", "text/json")
-	out.Write(resp.Marshal())
+	self.write(out, response)
 }
 
 //处理push
-func (self *ApnsHttpServer) handlePush(resp http.ResponseWriter, req *http.Request) {
+func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Request) {
 
-	response := response{}
-	response.Status = RESP_STATUS_SUCC
-
+	resp := &response{}
+	resp.Status = RESP_STATUS_SUCC
 	if req.Method == "GET" {
 		//返回不支持的请求方式
-		response.Status = RESP_STATUS_INVALID_PROTO
-		response.Error = errors.New("Unsupport Get method Invoke!")
+		resp.Status = RESP_STATUS_INVALID_PROTO
+		resp.Error = errors.New("Unsupport Get method Invoke!")
 
 	} else if req.Method == "POST" {
 
 		//pushType
-		// pushType := req.PostFormValue("pushType") //先默认采用Enhanced方式
+		pushType := req.PostFormValue("pt") //先默认采用Enhanced方式
+		//接卸对应的token和payload
+		token, payload := self.decodePayload(req, resp)
 
-		token := req.PostFormValue("token")
-
-		sound := req.PostFormValue("sound")
-
-		badgeV := req.PostFormValue("badge")
-		badge, _ := strconv.ParseInt(badgeV, 10, 32)
-
-		body := req.PostFormValue("body")
-
-		//是个大的Json数据即可
-		extArgs := req.PostFormValue("extArgs")
-
-		//拼接payload
-		payload := *entry.NewSimplePayLoad(sound, int(badge), body)
-
-		if len(extArgs) > 0 {
-			var jsonMap map[string]interface{}
-			err := json.Unmarshal([]byte(extArgs), &jsonMap)
-			if nil != err {
-				response.Status = RESP_STATUS_PAYLOAD_BODY_DECODE_ERROR
-				response.Error = errors.New("PAYLOAD BODY DECODE ERROR!")
-			} else {
-
-				for k, v := range jsonMap {
-					//如果存在数据嵌套则返回错误，不允许数据多层嵌套
-					if reflect.TypeOf(v).Kind() == reflect.Map {
-						response.Status = RESP_STATUS_PAYLOAD_BODY_DEEP_ITERATOR
-						response.Error = errors.New("DEEP PAYLOAD BODY ITERATOR!")
-						break
-					} else {
-						payload.AddExtParam(k, v)
-					}
-				}
-			}
-		}
-
-		if RESP_STATUS_SUCC == response.Status {
-
-			//能直接放在chan中异步发送
-			var err error
-			//如果有异常则重试发送
-			for i := 0; i < 3; i++ {
-				log.Println(payload)
-				err = self.apnsClient.SendEnhancedNotification(self.pushId, self.expiredTime, token, payload)
-				if nil == err {
-					self.pushId++
-					break
-				}
-			}
-
-			if nil != err {
-				log.Printf("APNS_HTTP_SERVER|SendEnhancedNotification|FAIL|IGNORED|%s|%s\n", payload, err)
-				response.Status = RESP_STATUS_SEND_OVER_TRY_ERROR
-				response.Error = err
-			}
+		//----------------如果依然是成功状态则证明当前可以发送
+		if RESP_STATUS_SUCC == resp.Status {
+			self.innerSend(pushType, token, payload, resp)
 		}
 
 	}
+	self.write(out, resp)
+}
 
-	self.write(resp, response)
-
+func (self *ApnsHttpServer) write(out http.ResponseWriter, resp *response) {
+	out.Header().Set("content-type", "text/json")
+	log.Println(resp)
+	out.Write(resp.Marshal())
 }
