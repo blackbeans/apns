@@ -119,45 +119,6 @@ Http方式发送IOS PUSH
                 devicetoken string
         NOTE :
             limit服务端最大每次可拉取 100条。
-=======
-Client端发起调用
-发送PUSH协议：
-    POST：
-    REQ：
-    http://localhost:7070/apns/push
-    pushType:= req.PostFormValue("pt") //notification 的类型
-
-    pushType:
-        NOTIFY_SIMPLE_FORMAT   = "0" //simple notification
-        NOTIFY_ENHANCED_FORMAT = "1" //enhanced notification 
-
-    token := req.PostFormValue("token") 
-    sound := req.PostFormValue("sound")
-    badgeV := req.PostFormValue("badge")
-    body := req.PostFormValue("body")
-    //是个大的Json数据即可
-    extArgs := req.PostFormValue("extArgs")
-    RESP：
-    //---------定义返回状态码
-    RESP_STATUS_SUCC                            = 200 //成功
-    RESP_STATUS_ERROR                           = 500 //服务器端错误
-    RESP_STATUS_INVALID_PROTO                   = 201 //不允许使用GET 请求发送数据
-    RESP_STATUS_PUSH_ARGUMENTS_INVALID          = 400 //请求参数错误
-    RESP_STATUS_INVALID_NOTIFY_FORMAT           = 501 //错误的NotificationFormat类型
-    RESP_STATUS_PAYLOAD_BODY_DECODE_ERROR       = 505 //payload 的body 存在反序列化失败的问题
-    RESP_STATUS_PAYLOAD_BODY_DEEP_ITERATOR      = 505 //payload 的body 不允许多层嵌套
-    RESP_STATUS_SEND_OVER_TRY_ERROR             = 506 //推送到IOS PUSH 重试3次后失败
-    RESP_STATUS_FETCH_FEEDBACK_OVER_LIMIT_ERROR = 507 //获取feedback的数量超过最大限制
-    获取Feedback协议：
-    GET ：
-    REQ： http://localhost:7070/apns/feedback?limit=50
-    RESP：返回指定数量的feedback 
-        feedback: 
-            time uint32
-            devicetoken string
-    NOTE :
-        limit服务端最大每次可拉取 100条。
->>>>>>> aa6055b1082c7177d35b2fe6b3029198383b5942
 
 
 
