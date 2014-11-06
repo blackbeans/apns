@@ -72,17 +72,20 @@ func (self *ApnsHttpServer) decodePayload(req *http.Request, resp *response) (st
 func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *entry.PayLoad, resp *response) {
 
 	var sendFunc func(err error) error
+
 	if NOTIFY_SIMPLE_FORMAT == pushType {
 		//如果为简单
 		sendFunc = func(err error) error {
-			return self.apnsClient.SendEnhancedNotification(self.identifierId(err),
-				self.expiredTime, token, *payload)
+			return self.apnsClient.SendSimpleNotification(token, *payload)
 		}
 	} else if NOTIFY_ENHANCED_FORMAT == pushType {
 		//如果为扩展的
+		id := self.identifierId()
 		sendFunc = func(err error) error {
-			return self.apnsClient.SendSimpleNotification(token, *payload)
+			return self.apnsClient.SendEnhancedNotification(id,
+				self.expiredTime, token, *payload)
 		}
+
 	} else {
 		resp.Status = RESP_STATUS_INVALID_NOTIFY_FORMAT
 		resp.Error = errors.New("Invalid notification format " + pushType)
@@ -114,9 +117,9 @@ func checkArguments(args ...string) bool {
 	return true
 }
 
-func (self *ApnsHttpServer) identifierId(err error) uint32 {
-	if nil == err {
-		self.pushId = atomic.AddUint32(&self.pushId, 1)
-	}
+func (self *ApnsHttpServer) identifierId() uint32 {
+	self.mutex.Lock()
+	self.pushId = atomic.AddUint32(&self.pushId, 1)
+	self.mutex.Unlock()
 	return self.pushId
 }

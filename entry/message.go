@@ -12,10 +12,11 @@ type Message struct {
 	op     byte
 	length int32
 	items  []*Item
+	ttl    uint8 //存活次数
 }
 
-func NewMessage(op byte) *Message {
-	msg := &Message{op: op}
+func NewMessage(op byte, ttl uint8) *Message {
+	msg := &Message{op: op, ttl: ttl}
 	msg.items = make([]*Item, 0, 2)
 	return msg
 }

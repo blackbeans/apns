@@ -15,9 +15,10 @@ const (
 	NOTIFY_ENHANCED_FORMAT = "1"
 
 	//苹果发送Push
-	ADDR_SANDBOX  = "gateway.sandbox.push.apple.com:2195"
-	ADDR_ONLINE   = "gateway.push.apple.com:2195"
-	ADDR_FEEDBACK = "feedback.push.apple.com:2196"
+	ADDR_SANDBOX          = "gateway.sandbox.push.apple.com:2195"
+	ADDR_ONLINE           = "gateway.push.apple.com:2195"
+	ADDR_FEEDBACK         = "feedback.push.apple.com:2196"
+	ADDR_FEEDBACK_SANDBOX = "feedback.sandbox.push.apple.com:2196"
 
 	//---------定义返回状态码
 	RESP_STATUS_SUCC                            = 200 //成功
@@ -57,9 +58,12 @@ type Option struct {
 
 func NewOption(bindaddr string, certpath string, keypath string, runmode int) Option {
 	pushaddr := ADDR_SANDBOX
+	feedbackAddr := ADDR_FEEDBACK_SANDBOX
 	if runmode == 1 {
 		//启动sandbox
 		pushaddr = ADDR_ONLINE
+		feedbackAddr = ADDR_FEEDBACK
+
 	}
 
 	//加载证书
@@ -69,5 +73,5 @@ func NewOption(bindaddr string, certpath string, keypath string, runmode int) Op
 		panic(err)
 	}
 
-	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: ADDR_FEEDBACK}
+	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr}
 }

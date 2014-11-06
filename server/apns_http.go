@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 type ApnsHttpServer struct {
@@ -14,6 +15,7 @@ type ApnsHttpServer struct {
 	feedbackChan chan *entry.Feedback //用于接收feedback的chan
 	apnsClient   *apns.ApnsClient
 	pushId       uint32
+	mutex        sync.Mutex
 	expiredTime  uint32
 }
 
@@ -41,8 +43,6 @@ func NewApnsHttpServer(option Option) *ApnsHttpServer {
 		}
 	}()
 
-	//读取一下响应结果
-	// resp := <-responseChan
 	return server
 }
 

@@ -14,6 +14,7 @@ type ApnsClient struct {
 	factory         IConnFactory
 	feedbackFactory IConnFactory //用于查询feedback的链接
 	running         bool
+	maxttl          uint8
 }
 
 func NewDefaultApnsClient(cert tls.Certificate,
@@ -44,7 +45,7 @@ func NewDefaultApnsClient(cert tls.Certificate,
 }
 
 func NewApnsClient(factory IConnFactory, feedbackFactory IConnFactory) *ApnsClient {
-	client := &ApnsClient{factory: factory, feedbackFactory: feedbackFactory, running: true}
+	client := &ApnsClient{factory: factory, feedbackFactory: feedbackFactory, running: true, maxttl: 3}
 	go func() {
 		for client.running {
 			aa, ac, am := factory.MonitorPool()
@@ -58,19 +59,20 @@ func NewApnsClient(factory IConnFactory, feedbackFactory IConnFactory) *ApnsClie
 
 //发送简单的notification
 func (self *ApnsClient) SendSimpleNotification(deviceToken string, payload entry.PayLoad) error {
-	message := entry.NewMessage(entry.CMD_SIMPLE_NOTIFY)
+	message := entry.NewMessage(entry.CMD_SIMPLE_NOTIFY, self.maxttl)
 	message.AddItem(entry.WrapDeviceToken(deviceToken), entry.WrapPayLoad(&payload))
 	//直接发送的没有返回值
 	return self.sendMessage(message)
 }
 
 func (self *ApnsClient) SendEnhancedNotification(identifier, expiriedTime uint32, deviceToken string, pl entry.PayLoad) error {
-	message := entry.NewMessage(entry.CMD_ENHANCE_NOTIFY)
+	id := entry.WrapNotifyIdentifier(identifier)
+	message := entry.NewMessage(entry.CMD_ENHANCE_NOTIFY, self.maxttl)
 	payload := entry.WrapPayLoad(&pl)
 	if nil == payload {
 		return errors.New("SendEnhancedNotification|PAYLOAD|ENCODE|FAIL")
 	}
-	message.AddItem(entry.WrapNotifyIdentifier(identifier), entry.WrapExpirationDate(expiriedTime),
+	message.AddItem(id, entry.WrapExpirationDate(expiriedTime),
 		entry.WrapDeviceToken(deviceToken), payload)
 	return self.sendMessage(message)
 }
