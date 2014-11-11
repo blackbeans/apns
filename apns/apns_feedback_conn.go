@@ -16,14 +16,14 @@ type FeedbackConn struct {
 }
 
 func NewFeedbackConn(feedbackChan chan<- *entry.Feedback, certificates tls.Certificate,
-	hostport string, deadline time.Duration, heartCheck int32) (error, *FeedbackConn) {
+	hostport string, deadline time.Duration, id int32) (error, *FeedbackConn) {
 
 	conn := &FeedbackConn{}
 	conn.ApnsConnection.cert = certificates
 	conn.ApnsConnection.hostport = hostport
 	conn.ApnsConnection.deadline = deadline
-	conn.ApnsConnection.heartCheck = heartCheck
 	conn.feedbackChan = feedbackChan
+	conn.connectionId = id
 	return conn.Open(), conn
 }
 

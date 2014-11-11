@@ -71,17 +71,17 @@ func (self *ApnsHttpServer) decodePayload(req *http.Request, resp *response) (st
 //内部发送代码
 func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *entry.PayLoad, resp *response) {
 
-	var sendFunc func(err error) error
+	var sendFunc func() error
 
 	if NOTIFY_SIMPLE_FORMAT == pushType {
 		//如果为简单
-		sendFunc = func(err error) error {
+		sendFunc = func() error {
 			return self.apnsClient.SendSimpleNotification(token, *payload)
 		}
 	} else if NOTIFY_ENHANCED_FORMAT == pushType {
 		//如果为扩展的
 		id := self.identifierId()
-		sendFunc = func(err error) error {
+		sendFunc = func() error {
 			return self.apnsClient.SendEnhancedNotification(id,
 				self.expiredTime, token, *payload)
 		}
@@ -94,11 +94,8 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 	//能直接放在chan中异步发送
 	var err error
 	//如果有异常则重试发送
-	for i := 0; i < 3 && (RESP_STATUS_SUCC == resp.Status); i++ {
-		err = sendFunc(err)
-		if nil == err {
-			break
-		}
+	if RESP_STATUS_SUCC == resp.Status {
+		err = sendFunc()
 	}
 	if nil != err {
 		log.Printf("APNS_HTTP_SERVER|SendNotification|FORMATE:%d|FAIL|IGNORED|%s|%s\n", pushType, payload, err)
@@ -118,8 +115,5 @@ func checkArguments(args ...string) bool {
 }
 
 func (self *ApnsHttpServer) identifierId() uint32 {
-	self.mutex.Lock()
-	self.pushId = atomic.AddUint32(&self.pushId, 1)
-	self.mutex.Unlock()
-	return self.pushId
+	return atomic.AddUint32(&self.pushId, 1)
 }

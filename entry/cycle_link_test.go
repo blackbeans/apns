@@ -9,14 +9,16 @@ func BenchmarkInsert(t *testing.B) {
 
 	link := NewCycleLink(3, 10000)
 	for i := 0; i < t.N; i++ {
-		msg := NewMessage(0, 3)
-		link.Insert(int32(i), msg)
+		msg := NewMessage(1, 3, MESSAGE_TYPE_SIMPLE)
+		link.Insert(uint32(i), msg)
 	}
 
 	ch := make(chan *Message)
 
 	go func() {
-		link.Remove(0, -1, ch)
+		link.Remove(0, 0, ch, func(msg *Message) bool {
+			return false
+		})
 	}()
 
 	for {
@@ -35,13 +37,13 @@ func BenchmarkInsert(t *testing.B) {
 
 func TestCycleLink(t *testing.T) {
 	link := NewCycleLink(3, 3)
-	msg1 := NewMessage(1, 3)
+	msg1 := NewMessage(1, 3, MESSAGE_TYPE_SIMPLE)
 	link.Insert(1, msg1)
-	msg2 := NewMessage(2, 3)
+	msg2 := NewMessage(2, 3, MESSAGE_TYPE_SIMPLE)
 	link.Insert(2, msg2)
-	msg3 := NewMessage(3, 3)
+	msg3 := NewMessage(3, 3, MESSAGE_TYPE_SIMPLE)
 	link.Insert(3, msg3)
-	msg4 := NewMessage(4, 3)
+	msg4 := NewMessage(4, 3, MESSAGE_TYPE_SIMPLE)
 	link.Insert(4, msg4)
 	fmt.Println("INSERT-----------")
 	PrintLink(t, link)
@@ -62,7 +64,9 @@ func TestCycleLink(t *testing.T) {
 	ch := make(chan *Message)
 
 	go func() {
-		link.Remove(1, 2, ch)
+		link.Remove(1, 2, ch, func(msg *Message) bool {
+			return false
+		})
 	}()
 
 	for {
@@ -85,7 +89,9 @@ func TestCycleLink(t *testing.T) {
 
 	go func() {
 		//删除最后一个
-		link.Remove(3, -1, ch)
+		link.Remove(3, 0, ch, func(msg *Message) bool {
+			return false
+		})
 	}()
 
 	for {
@@ -105,7 +111,7 @@ func TestCycleLink(t *testing.T) {
 		fmt.Printf("CYCLE-LEFT NULL FAIL|%d\n", link.length)
 	}
 
-	msg5 := NewMessage(5, 0)
+	msg5 := NewMessage(5, 0, MESSAGE_TYPE_SIMPLE)
 	link.Insert(5, msg5)
 
 	//---------5的ttl为0 则应该不插入
@@ -116,7 +122,7 @@ func TestCycleLink(t *testing.T) {
 	}
 
 	//------插入5
-	msg5 = NewMessage(5, 3)
+	msg5 = NewMessage(5, 3, MESSAGE_TYPE_SIMPLE)
 	link.Insert(5, msg5)
 
 	if link.length != 1 {
@@ -126,7 +132,9 @@ func TestCycleLink(t *testing.T) {
 
 	go func() {
 		//删除最后一个
-		link.Remove(3, -1, ch)
+		link.Remove(3, 0, ch, func(msg *Message) bool {
+			return false
+		})
 	}()
 
 	for {

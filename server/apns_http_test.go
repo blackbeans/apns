@@ -15,13 +15,14 @@ const (
 	KEY_PATH        = "/Users/blackbeans/key.pem"
 	PUSH_APPLE      = "gateway.push.apple.com:2195"
 	FEED_BACK_APPLE = "feedback.push.apple.com:2196"
-	apnsToken       = "68343efb 96b34a76 e404d334 add0b4b3 83c9f943 0b2a37bd 619bcad6 31a211da"
+	apnsToken       = "f232e312 93b0d63b a8867879 50eb9121 68f182e6 c91bc6bd f39d162b f5d7697d"
 	PROXY_URL       = "http://localhost:17070"
 )
 
 func TestApnsHttpServer(t *testing.T) {
 	option := NewOption(":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE)
 	option.expiredTime = uint32(6 * 3600)
+	option.storageCapacity = 100
 	server := NewApnsHttpServer(option)
 
 	//测试发送

@@ -26,5 +26,5 @@ const (
 	RESP_INVALID_PAYLOAD_SIZE = byte(7)
 	RESP_INVALID_TOKEN        = byte(8)
 	RESP_SHUTDOWN             = byte(10)
-	RESP_NONE                 = byte(255)
+	RESP_UNKNOW               = byte(255)
 )

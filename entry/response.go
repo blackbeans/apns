@@ -41,6 +41,7 @@ type Response struct {
 	Cmd        uint8
 	Status     uint8
 	Identifier uint32
+	ProccessId int32
 }
 
 func (self *Response) Unmarshal(data []byte) {

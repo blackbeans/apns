@@ -49,11 +49,12 @@ func (self *response) Marshal() []byte {
 }
 
 type Option struct {
-	bindAddr     string
-	cert         tls.Certificate
-	pushAddr     string
-	feedbackAddr string
-	expiredTime  uint32
+	bindAddr        string
+	cert            tls.Certificate
+	pushAddr        string
+	feedbackAddr    string
+	expiredTime     uint32
+	storageCapacity int //用于存储临时发送的数据量
 }
 
 func NewOption(bindaddr string, certpath string, keypath string, runmode int) Option {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type IConnFactory interface {
 
 //apnsconn的连接池
 type ConnPool struct {
-	dialFunc     func() (error, IConn)
+	dialFunc     func(connectionId int32) (error, IConn)
 	maxPoolSize  int //最大尺子大小
 	minPoolSize  int //最小连接池大小
 	corepoolSize int //核心池子大小
@@ -33,6 +34,8 @@ type ConnPool struct {
 	mutex sync.Mutex
 
 	running bool
+
+	connectionId int32 //链接的Id
 }
 
 type IdleConn struct {
@@ -42,7 +45,7 @@ type IdleConn struct {
 
 func NewConnPool(minPoolSize, corepoolSize,
 	maxPoolSize int, idletime time.Duration,
-	dialFunc func() (error, IConn)) (error, *ConnPool) {
+	dialFunc func(connectionId int32) (error, IConn)) (error, *ConnPool) {
 
 	idlePool := list.New()
 	checkOutPool := list.New()
@@ -54,7 +57,8 @@ func NewConnPool(minPoolSize, corepoolSize,
 		idlePool:     idlePool,
 		dialFunc:     dialFunc,
 		checkOutPool: checkOutPool,
-		running:      true}
+		running:      true,
+		connectionId: 1}
 
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
@@ -64,7 +68,7 @@ func NewConnPool(minPoolSize, corepoolSize,
 		var err error
 		var conn IConn
 		for ; j < 3; j++ {
-			err, conn = dialFunc()
+			err, conn = dialFunc(pool.id())
 			if nil != err {
 				log.Printf("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s\n", err)
 
@@ -210,7 +214,6 @@ func (self *ConnPool) innerGet() IConn {
 			}
 		} else {
 			//如果小于等于Minpoolsize时，如果过期就将时间重置
-
 			if idle.expiredTime.After(time.Now()) {
 				idle.expiredTime = time.Now().Add(self.idletime)
 			}
@@ -236,7 +239,7 @@ func (self *ConnPool) innerGet() IConn {
 			return conn
 		} else {
 			//如果没有可用链接则创建一个
-			err, tmpconn := self.dialFunc()
+			err, tmpconn := self.dialFunc(self.id())
 			if nil != err {
 
 			} else {
@@ -250,7 +253,7 @@ func (self *ConnPool) innerGet() IConn {
 	if self.corePoolSize() < self.minPoolSize {
 		for i := self.corePoolSize(); i <= self.minPoolSize; i++ {
 			//如果没有可用链接则创建一个
-			err, tmpconn := self.dialFunc()
+			err, tmpconn := self.dialFunc(self.id())
 			if nil != err {
 				log.Printf("POOL|CORE(%d) < MINI(%d)|CREATE CLIENT FAIL|%s",
 					self.corePoolSize(), self.minPoolSize, err.Error())
@@ -262,6 +265,11 @@ func (self *ConnPool) innerGet() IConn {
 	}
 
 	return conn
+}
+
+//生成connectionId
+func (self *ConnPool) id() int32 {
+	return atomic.AddInt32(&self.connectionId, 1)
 }
 
 func (self *ConnPool) Shutdown() {

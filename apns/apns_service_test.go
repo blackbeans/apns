@@ -13,7 +13,7 @@ const (
 	KEY_PATH        = "/Users/blackbeans/key.pem"
 	PUSH_APPLE      = "gateway.push.apple.com:2195"
 	FEED_BACK_APPLE = "feedback.push.apple.com:2196"
-	apnsToken       = "bb9182d786ecc6878eae2a3a4c87e3fc1b4e8f861717210af8810384aa67369d"
+	apnsToken       = "f232e31293b0d63ba886787950eb912168f182e6c91bc6bdf39d162bf5d7697d"
 )
 
 func TestSendMessage(t *testing.T) {
@@ -42,7 +42,7 @@ func TestSendMessage(t *testing.T) {
 
 	body := "hello apns"
 	payload := entry.NewSimplePayLoad("ms.caf", 1, body)
-	client := NewApnsClient(&ConnFacotry{conn: conn}, &ConnFacotry{conn: feedback})
+	client := NewApnsClient(&ConnFacotry{conn: conn}, &ConnFacotry{conn: feedback}, entry.NewCycleLink(3, 100))
 	for i := 0; i < 1; i++ {
 		err := client.SendEnhancedNotification(1, math.MaxUint32, apnsToken, *payload)
 		// err := client.SendSimpleNotification(apnsToken, payload)
@@ -91,7 +91,7 @@ func TestPoolSendMessage(t *testing.T) {
 
 	body := "hello apns"
 	payload := entry.NewSimplePayLoad("ms.caf", 1, body)
-	client := NewDefaultApnsClient(cert, responseChan, PUSH_APPLE, feedbackChan, FEED_BACK_APPLE)
+	client := NewDefaultApnsClient(cert, PUSH_APPLE, feedbackChan, FEED_BACK_APPLE, entry.NewCycleLink(3, 100))
 	for i := 0; i < 1; i++ {
 		err := client.SendEnhancedNotification(1, math.MaxUint32, apnsToken, *payload)
 		// err := client.SendSimpleNotification(apnsToken, payload)

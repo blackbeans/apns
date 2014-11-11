@@ -23,18 +23,18 @@ type ApnsConnection struct {
 	cert         tls.Certificate //ssl证书
 	hostport     string
 	deadline     time.Duration
-	heartCheck   int32 //heart check
 	conn         *tls.Conn
 	responseChan chan<- *entry.Response
-	alive        bool //是否存活
+	alive        bool  //是否存活
+	connectionId int32 //当前连接的标识
 }
 
-func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, heartCheck int32) (error, *ApnsConnection) {
+func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
 
 	conn := &ApnsConnection{cert: certificates,
-		hostport:   hostport,
-		deadline:   deadline,
-		heartCheck: heartCheck}
+		hostport:     hostport,
+		deadline:     deadline,
+		connectionId: connectionId}
 	return conn.Open(), conn
 }
 
@@ -98,6 +98,8 @@ func (self *ApnsConnection) dial() error {
 }
 
 func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
+	//将当前的msg强制设置为当前conn的id作为标识
+	msg.ProcessId = self.connectionId
 
 	err, packet := msg.Encode()
 	if nil != err {

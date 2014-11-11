@@ -5,6 +5,15 @@ import (
 	"sync"
 )
 
+//通用的存储发送message的接口
+type IMessageStorage interface {
+	//删除接口带过滤条件
+	Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(msg *Message) bool)
+	Insert(id uint32, msg *Message)
+	Get(id uint32) *Message //获取某个消息
+	Length() int            // 返回长度
+}
+
 /**
 *带有hash的循环链表，支持随机查询
 *此循环链表用于在内存中记录一下已经发送的message
@@ -12,7 +21,7 @@ import (
 *自动过滤message中的ttl为0的数据
  */
 type node struct {
-	id   int32 //只使用在enhanced的情况下
+	id   uint32 //只使用在enhanced的情况下
 	msg  *Message
 	next *node
 	pre  *node
@@ -20,25 +29,34 @@ type node struct {
 
 //循环链表
 type CycleLink struct {
-	head        *node           //循环链表
-	length      int             //当前节点联调的长度
-	hash        map[int32]*node //记录了hash的节点，方便定位
-	mutex       sync.Mutex      //并发控制
-	maxCapacity int             //最大节点数量
-	maxttl      uint8           //最大生存周期
+	head        *node            //循环链表
+	length      int              //当前节点联调的长度
+	hash        map[uint32]*node //记录了hash的节点，方便定位
+	mutex       sync.Mutex       //并发控制
+	maxCapacity int              //最大节点数量
+	maxttl      uint8            //最大生存周期
 }
 
 func NewCycleLink(maxttl uint8, maxCapacity int) *CycleLink {
 	link := &CycleLink{}
 	link.maxCapacity = maxCapacity
-	link.hash = make(map[int32]*node, maxCapacity/2)
+	link.hash = make(map[uint32]*node, maxCapacity/2)
 	link.maxttl = maxttl
 	link.head = nil
 
 	return link
 }
 
-func (self *CycleLink) Insert(id int32, msg *Message) {
+func (self *CycleLink) Get(id uint32) *Message {
+	val, _ := self.hash[id]
+	return val.msg
+}
+
+func (self *CycleLink) Length() int {
+	return self.length
+}
+
+func (self *CycleLink) Insert(id uint32, msg *Message) {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
@@ -137,16 +155,17 @@ func (self *CycleLink) innerRemove(n *node) *node {
 *
 * 删除起始Id-->结束id的元素如果endId为-1 则全部删除
 * 如果starId没有出现在则从头结点开始删除
+* 带有skip过滤器形式的删除
 **/
-func (self *CycleLink) Remove(startId int32, endId int32, ch chan<- *Message) {
+func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(msg *Message) bool) {
 
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
 	start, ok_h := self.hash[startId]
 	end, ok_e := self.hash[endId]
-	// //如果endId为-1那么就代表清空节点
-	if endId == -1 {
+	// //如果endId为0那么就代表清空节点
+	if endId == 0 {
 		//end为head的pre
 		end = self.head.pre
 		ok_e = true
@@ -163,16 +182,22 @@ func (self *CycleLink) Remove(startId int32, endId int32, ch chan<- *Message) {
 
 	//一个接一个地获取并删除节点，endId为-1
 	for n := start; nil != n && func() bool {
-		if endId != -1 {
+		if endId != 0 {
 			return n == end
 		} else {
 			return true
 		}
-	}(); n = self.innerRemove(n) {
+	}(); {
 
-		n.msg.ttl--
-		//写入channel 让另一侧重发
-		ch <- n.msg
+		//如果filter不为空或者skip返回false则认为跳过
+		if nil != filter && filter(n.msg) {
+			n = n.next
+		} else {
+			n.msg.ttl--
+			//写入channel 让另一侧重发
+			ch <- n.msg
+			n = self.innerRemove(n)
+		}
 	}
 
 	ch <- nil

@@ -11,7 +11,6 @@ import (
 )
 
 type ApnsHttpServer struct {
-	responseChan chan *entry.Response // 响应地channel
 	feedbackChan chan *entry.Feedback //用于接收feedback的chan
 	apnsClient   *apns.ApnsClient
 	pushId       uint32
@@ -21,14 +20,13 @@ type ApnsHttpServer struct {
 
 func NewApnsHttpServer(option Option) *ApnsHttpServer {
 
-	responseChan := make(chan *entry.Response, 100)
 	feedbackChan := make(chan *entry.Feedback, 1000)
 
 	//初始化apns
-	apnsClient := apns.NewDefaultApnsClient(option.cert, chan<- *entry.Response(responseChan),
-		option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr)
+	apnsClient := apns.NewDefaultApnsClient(option.cert,
+		option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
 
-	server := &ApnsHttpServer{responseChan: responseChan, feedbackChan: feedbackChan,
+	server := &ApnsHttpServer{feedbackChan: feedbackChan,
 		apnsClient: apnsClient, expiredTime: option.expiredTime}
 
 	http.HandleFunc("/apns/push", server.handlePush)
