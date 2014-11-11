@@ -1,7 +1,7 @@
 package entry
 
 import (
-	"fmt"
+	_ "log"
 	"sync"
 )
 
@@ -14,8 +14,8 @@ import (
 type node struct {
 	id   int32 //只使用在enhanced的情况下
 	msg  *Message
-	pre  *node
 	next *node
+	pre  *node
 }
 
 //循环链表
@@ -56,49 +56,64 @@ func (self *CycleLink) Insert(id int32, msg *Message) {
 		n := &node{id: id, msg: msg}
 		//这里判断一下是否达到了最大的容量，如果达到了就覆盖头节点的数据，否则就pushback
 		if self.length >= self.maxCapacity {
-
-			//取出head的数据，并删除hash中的Key-Value
-			delete(self.hash, self.head.id)
-			//将头结点的数据改为新的数据，并重新构建hash对应关系
-			self.head.id = id
-			self.head.msg = msg
-			self.hash[id] = n
-
-		} else {
-
-			//如果还么有初始化
-			if self.length <= 0 {
-				n.next = n
-				n.pre = n
-				self.head = n
-
-			} else {
-
-				//直接将n的pre 指向tail,将next指向 tail.next
-				n.pre = self.head.pre
-				n.next = self.head
-				//header的pre指向 n
-				self.head.pre = n
-				n.pre.next = n
-
-			}
-
-			self.hash[id] = n
-			self.length++
-
+			//删除当前头结点，返回新的头结点
+			self.innerRemove(self.head)
+			// //将头结点的数据改为新的数据，并重新构建hash对应关系
+			// log.Printf("CYCLE-LINK|OVERFLOW|%d|%t", self.length, self.head)
 		}
+
+		//最后统一执行写入
+		self.innerInsert(self.head, n)
+
 	} else {
 		v.msg = msg
 	}
 
 }
 
+func (self *CycleLink) innerInsert(h *node, n *node) {
+
+	if n.msg.ttl <= 0 {
+		//如果当前的写入的node中的msg如果ttl为0 那么直接丢弃
+		return
+	}
+
+	//如果还么有初始化
+	if self.length <= 0 {
+		n.next = n
+		n.pre = n
+		self.head = n
+
+	} else {
+
+		//直接将n的pre 指向tail,将next指向 tail.next
+		n.pre = self.head.pre
+		n.next = self.head
+		//header的pre指向 n
+		self.head.pre = n
+		n.pre.next = n
+	}
+
+	self.hash[n.id] = n
+	self.length++
+}
+
+/**
+*
+*删除当前节点n ,并返回新的删除该节点的下一个节点
+**/
 func (self *CycleLink) innerRemove(n *node) *node {
 
 	tmp := n.next
+
+	//如果当前节点成为自环并且当当前整个链条长度为1则直接赋值为nil
+	if n.next == n.pre && n.pre == n && self.length == 1 {
+		tmp = nil
+	}
+
 	//如果n为head节点，这时候需要移动Head节点
 	if n == self.head {
-		self.head = n.next
+		self.head = tmp
 	}
 	//如果还有下一个数据，则进行断开指针操作
 	if nil != n.next {
@@ -109,7 +124,6 @@ func (self *CycleLink) innerRemove(n *node) *node {
 	//删除map中保留的索引
 	delete(self.hash, n.id)
 	self.length--
-
 	//释放空间
 	n.next = nil
 	n.pre = nil
@@ -119,7 +133,11 @@ func (self *CycleLink) innerRemove(n *node) *node {
 
 }
 
-//删除元素
+/**
+*
+* 删除起始Id-->结束id的元素如果endId为-1 则全部删除
+* 如果starId没有出现在则从头结点开始删除
+**/
 func (self *CycleLink) Remove(startId int32, endId int32, ch chan<- *Message) {
 
 	self.mutex.Lock()
@@ -132,17 +150,21 @@ func (self *CycleLink) Remove(startId int32, endId int32, ch chan<- *Message) {
 		//end为head的pre
 		end = self.head.pre
 		ok_e = true
-	}
-	//如果不存在这样start 则直接返回
-	if !(ok_h && ok_e) {
+	} else if !ok_e {
+		//如果不存在这样end 则直接返回
 		ch <- nil
 		return
+	}
+
+	//如果起始坐标不存在则使用头节点
+	if !ok_h {
+		start = self.head
 	}
 
 	//一个接一个地获取并删除节点，endId为-1
 	for n := start; nil != n && func() bool {
 		if endId != -1 {
-			return n != end
+			return n == end
 		} else {
 			return true
 		}
@@ -151,7 +173,6 @@ func (self *CycleLink) Remove(startId int32, endId int32, ch chan<- *Message) {
 		n.msg.ttl--
 		//写入channel 让另一侧重发
 		ch <- n.msg
-		fmt.Printf("CY|REMOVE|%t\n", self.head)
 	}
 
 	ch <- nil

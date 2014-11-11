@@ -5,8 +5,36 @@ import (
 	"testing"
 )
 
+func BenchmarkInsert(t *testing.B) {
+
+	link := NewCycleLink(3, 10000)
+	for i := 0; i < t.N; i++ {
+		msg := NewMessage(0, 3)
+		link.Insert(int32(i), msg)
+	}
+
+	ch := make(chan *Message)
+
+	go func() {
+		link.Remove(0, -1, ch)
+	}()
+
+	for {
+		tmp := <-ch
+		// t.Logf("GET REMOVE -------%t\n", tmp)
+		if nil == tmp {
+			close(ch)
+			break
+		}
+	}
+
+	t.Log("HEADER---------\n")
+
+	// PrintLink(t, link)
+}
+
 func TestCycleLink(t *testing.T) {
-	link := NewCycleLink(3, 4)
+	link := NewCycleLink(3, 3)
 	msg1 := NewMessage(1, 3)
 	link.Insert(1, msg1)
 	msg2 := NewMessage(2, 3)
@@ -19,9 +47,15 @@ func TestCycleLink(t *testing.T) {
 	PrintLink(t, link)
 
 	t.Logf("INSERT NODE |%d\n", link.length)
-	if link.length != 4 {
+	if link.length != 3 {
 		t.Fail()
 		t.Logf("INSERT NODE FAIL|%d\n", link.length)
+		return
+	}
+
+	if link.head.id != 2 {
+		t.Fail()
+		t.Logf("INSERT NODE HEAD IS NOT %d\n|%t\n", 2, link.head)
 		return
 	}
 
@@ -40,8 +74,8 @@ func TestCycleLink(t *testing.T) {
 	}
 
 	//剩下一个
-	if link.length != 3 && link.head.id != 2 {
-		t.Logf("REMOVE -----FIRST\t len:%d,head.id:%d----%t\n", link.length, link.head.id)
+	if link.length != 2 && link.head.id != 3 {
+		t.Logf("REMOVE -----FIRST\t len:%d,head.id:%d----%t\n", link.length, link.head)
 		t.Fail()
 		return
 	}
@@ -51,7 +85,48 @@ func TestCycleLink(t *testing.T) {
 
 	go func() {
 		//删除最后一个
-		link.Remove(2, -1, ch)
+		link.Remove(3, -1, ch)
+	}()
+
+	for {
+		tmp := <-ch
+		t.Logf("GET REMOVE LEFT-------%t|%d\n", tmp, link.length)
+		if nil == tmp {
+			break
+		}
+	}
+
+	fmt.Printf("CYCLE-LEFT-----------%d|%t\n", link.length, link)
+
+	if link.length > 0 {
+		PrintLink(t, link)
+		t.Fail()
+	} else if link.length != 0 {
+		fmt.Printf("CYCLE-LEFT NULL FAIL|%d\n", link.length)
+	}
+
+	msg5 := NewMessage(5, 0)
+	link.Insert(5, msg5)
+
+	//---------5的ttl为0 则应该不插入
+	if link.length != 0 {
+		t.Fail()
+		fmt.Printf("CYCLE-INSERT TTL 0|%t\n", link.length)
+		return
+	}
+
+	//------插入5
+	msg5 = NewMessage(5, 3)
+	link.Insert(5, msg5)
+
+	if link.length != 1 {
+		t.Fail()
+		return
+	}
+
+	go func() {
+		//删除最后一个
+		link.Remove(3, -1, ch)
 	}()
 
 	for {
@@ -62,22 +137,16 @@ func TestCycleLink(t *testing.T) {
 		}
 	}
 
-	fmt.Println("CYCLE-LEFT-----------")
-
-	if link.length > 0 {
-		PrintLink(t, link)
-		t.Fail()
-	} else {
-		fmt.Println("CYCLE-LEFT NULL SUCC-----------")
-	}
-
 }
 
-func PrintLink(t *testing.T, link *CycleLink) {
+func PrintLink(t testing.TB, link *CycleLink) {
 	h := link.head
-	for {
 
-		fmt.Printf("next---------%d\n", h.id)
+	for {
+		fmt.Printf("next---------%d\n", h)
+		if nil == h {
+			break
+		}
 		h = h.next
 		if nil == h || (link.head == h) {
 			break
@@ -87,12 +156,15 @@ func PrintLink(t *testing.T, link *CycleLink) {
 	h = link.head
 
 	for {
+		fmt.Printf("pre---------%d\n", h)
+		if nil == h {
+			break
+		}
 		h = h.pre
-
 		if nil == h {
 			break
 		} else {
-			fmt.Printf("pre---------%d\n", h.id)
+
 			if link.head == h {
 				break
 			}
