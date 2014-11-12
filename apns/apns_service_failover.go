@@ -56,5 +56,5 @@ func (self *ApnsClient) resend(ch chan *entry.Message, id uint32,
 
 func (self *ApnsClient) storeInvalidToken(token string) {
 	//这里是里面最后存储不合法的token
-
+	log.Printf("APNSCLIENT|UnImplement StoreInvalidToken|%s\n", token)
 }
