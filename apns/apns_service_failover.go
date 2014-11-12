@@ -19,9 +19,9 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 
 		case entry.RESP_SHUTDOWN, entry.RESP_ERROR, entry.RESP_UNKNOW:
 			//只有这三种才重发
-			self.resend(ch, resp.Identifier, func(msg *entry.Message) bool {
-				//不是当前连接发送的就直接略过
-				return msg.ProcessId != resp.ProccessId
+			self.resend(ch, resp.Identifier, func(id uint32, msg *entry.Message) bool {
+				//不是当前连接发送的就直接略过,以及第一个元素是不予以重发的所以要过滤
+				return msg.ProcessId != resp.ProccessId || id == resp.Identifier
 			})
 
 		case entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
@@ -33,12 +33,11 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 		}
 
 	}
-
 }
 
 //重发逻辑
 func (self *ApnsClient) resend(ch chan *entry.Message, id uint32,
-	filter func(msg *entry.Message) bool) {
+	filter func(id uint32, msg *entry.Message) bool) {
 	go func() {
 		self.storage.Remove(id, 0, ch, filter)
 	}()

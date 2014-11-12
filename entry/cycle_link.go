@@ -8,7 +8,7 @@ import (
 //通用的存储发送message的接口
 type IMessageStorage interface {
 	//删除接口带过滤条件
-	Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(msg *Message) bool)
+	Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(id uint32, msg *Message) bool)
 	Insert(id uint32, msg *Message)
 	Get(id uint32) *Message //获取某个消息
 	Length() int            // 返回长度
@@ -152,12 +152,11 @@ func (self *CycleLink) innerRemove(n *node) *node {
 }
 
 /**
-*
 * 删除起始Id-->结束id的元素如果endId为-1 则全部删除
 * 如果starId没有出现在则从头结点开始删除
 * 带有skip过滤器形式的删除
 **/
-func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(msg *Message) bool) {
+func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(id uint32, msg *Message) bool) {
 
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
@@ -190,7 +189,7 @@ func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan<- *Message, 
 	}(); {
 
 		//如果filter不为空或者skip返回false则认为跳过
-		if nil != filter && filter(n.msg) {
+		if nil != filter && filter(n.id, n.msg) {
 			n = n.next
 		} else {
 			n.msg.ttl--

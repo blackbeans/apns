@@ -57,7 +57,7 @@ type Option struct {
 	storageCapacity int //用于存储临时发送的数据量
 }
 
-func NewOption(bindaddr string, certpath string, keypath string, runmode int) Option {
+func NewOption(bindaddr string, certpath string, keypath string, runmode int, storageCapacity int) Option {
 	pushaddr := ADDR_SANDBOX
 	feedbackAddr := ADDR_FEEDBACK_SANDBOX
 	if runmode == 1 {
@@ -74,5 +74,5 @@ func NewOption(bindaddr string, certpath string, keypath string, runmode int) Op
 		panic(err)
 	}
 
-	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr}
+	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr, storageCapacity: storageCapacity}
 }
