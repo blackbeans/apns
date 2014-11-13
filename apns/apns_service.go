@@ -17,6 +17,8 @@ type ApnsClient struct {
 	running         bool
 	maxttl          uint8
 	storage         entry.IMessageStorage
+	sendCounter     *entry.Counter
+	failCounter     *entry.Counter
 }
 
 func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
@@ -58,13 +60,15 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 	storage entry.IMessageStorage, responseChannel chan *entry.Response) *ApnsClient {
 
 	client := &ApnsClient{factory: factory, feedbackFactory: feedbackFactory,
-		running: true, maxttl: 3, storage: storage}
+		running: true, maxttl: 3, storage: storage, sendCounter: &entry.Counter{}, failCounter: &entry.Counter{}}
 	go func() {
 		for client.running {
 			aa, ac, am := factory.MonitorPool()
 			fa, fc, fm := feedbackFactory.MonitorPool()
 			storageCap := client.storage.Length()
-			log.Printf("APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tstorageLen:%d\n", aa, ac, am, fa, fc, fm, storageCap)
+
+			log.Printf("APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tstorageLen:%d\tdeliver/fail:%d/%d\n", aa, ac, am, fa, fc, fm, storageCap,
+				client.sendCounter.Changes(), client.failCounter.Changes())
 			time.Sleep(1 * time.Second)
 		}
 	}()
@@ -118,9 +122,12 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	}
 
 	for i := 0; i < 3; i++ {
+		self.sendCounter.Incr(1)
 		//直接发送的没有返回值
 		err = conn.(*ApnsConnection).sendMessage(msg)
+
 		if nil != err {
+			self.failCounter.Incr(1)
 			log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d\n", err, i)
 		} else {
 			break
