@@ -3,7 +3,10 @@ package server
 import (
 	"crypto/tls"
 	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"strings"
 )
 
 const (
@@ -66,13 +69,52 @@ func NewOption(bindaddr string, certpath string, keypath string, runmode int, st
 		feedbackAddr = ADDR_FEEDBACK
 
 	}
+	cert := loadCert(certpath, keypath)
 
-	//加载证书
-	cert, err := tls.LoadX509KeyPair(certpath, keypath)
+	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr, storageCapacity: storageCapacity}
+}
+
+func loadCert(certpath string, keypath string) tls.Certificate {
+
+	var cert tls.Certificate
+	var err error
+	//判断当前文件协议是从http方式读取么
+	if strings.HasPrefix(keypath, "http://") || strings.HasPrefix(keypath, "https://") {
+		resp, kerr := http.Get(keypath)
+		if nil != kerr {
+			log.Panicf("loading key from [%s] is fail! -> %s\n", keypath, kerr)
+		}
+		key, kerr := ioutil.ReadAll(resp.Body)
+		if nil != kerr {
+			log.Panicf("reading key from [%s] is fail! -> %s\n", keypath, kerr)
+		}
+		defer resp.Body.Close()
+
+		resp, cerr := http.Get(certpath)
+		if nil != cerr {
+			log.Panicf("loading cert from [%s] is fail! -> %s\n", certpath, cerr)
+		}
+		certb, cerr := ioutil.ReadAll(resp.Body)
+		if nil != cerr {
+			log.Panicf("reading cert from [%s] is fail! -> %s\n", certpath, cerr)
+		}
+
+		defer resp.Body.Close()
+
+		cert, err = tls.X509KeyPair(certb, key)
+
+	} else {
+		//直接读取文件的
+		//加载证书
+		cert, err = tls.LoadX509KeyPair(certpath, keypath)
+
+	}
+
 	if nil != err {
 		log.Printf("LOAD CERT FAIL|%s\n", err.Error())
 		panic(err)
 	}
 
-	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr, storageCapacity: storageCapacity}
+	return cert
+
 }
