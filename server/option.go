@@ -73,13 +73,14 @@ func NewOption(bindaddr string, certpath string, keypath string, runmode int, st
 
 	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr, storageCapacity: storageCapacity}
 }
-
 func loadCert(certpath string, keypath string) tls.Certificate {
 
 	var cert tls.Certificate
 	var err error
 	//判断当前文件协议是从http方式读取么
 	if strings.HasPrefix(keypath, "http://") || strings.HasPrefix(keypath, "https://") {
+
+		log.Printf("keyPath:%s\ncertPath:%s\n", keypath, certpath)
 		resp, kerr := http.Get(keypath)
 		if nil != kerr {
 			log.Panicf("loading key from [%s] is fail! -> %s\n", keypath, kerr)

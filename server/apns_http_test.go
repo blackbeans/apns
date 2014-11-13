@@ -20,7 +20,7 @@ const (
 )
 
 func TestApnsHttpServer(t *testing.T) {
-	option := NewOption(":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE)
+	option := NewOption(":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE, 100)
 	option.expiredTime = uint32(6 * 3600)
 	option.storageCapacity = 100
 	server := NewApnsHttpServer(option)
