@@ -20,17 +20,17 @@ const (
 )
 
 func BenchmarkMockHttpServer(t *testing.B) {
-	option := NewOption(STARTMODE_MOCK, ":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE, 100)
-	option.expiredTime = uint32(6 * 3600)
-	option.storageCapacity = 100
-	server := NewApnsHttpServer(option)
-	fmt.Printf("-------------------mockserver:%s\n", server)
+	// option := NewOption(STARTMODE_MOCK, ":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE, 100)
+	// option.expiredTime = uint32(6 * 3600)
+	// option.storageCapacity = 100
+	// server := NewApnsHttpServer(option)
+	// fmt.Printf("-------------------mockserver:%s\n", server)
 	for i := 0; i < t.N; i++ {
 		//测试发送
 		innerApsnHttpServerSend(t)
 	}
 
-	defer server.Shutdown()
+	// defer server.Shutdown()
 }
 
 func TestApnsHttpServer(t *testing.T) {
@@ -50,7 +50,7 @@ func TestApnsHttpServer(t *testing.T) {
 
 func innerApsnHttpServerSend(t testing.TB) {
 
-	fmt.Println("innerApsnHttpServerSend is Starting")
+	// fmt.Println("innerApsnHttpServerSend is Starting")
 
 	data := make(url.Values)
 	data.Set("pt", NOTIFY_ENHANCED_FORMAT)
@@ -71,7 +71,7 @@ func innerApsnHttpServerSend(t testing.TB) {
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
 	if nil != err {
-		fmt.Printf("HTTP READ RESPONSE FAIL !|%s", err)
+		// fmt.Printf("HTTP READ RESPONSE FAIL !|%s", err)
 		t.Fail()
 		return
 	}
@@ -81,11 +81,11 @@ func innerApsnHttpServerSend(t testing.TB) {
 	var response response
 	err = json.Unmarshal(body, &response)
 	if nil != err {
-		fmt.Printf("innerApsnHttpServerSend|HTTP Unmarshal RESPONSE FAIL !|%s\n", body)
+		// fmt.Printf("innerApsnHttpServerSend|HTTP Unmarshal RESPONSE FAIL !|%s\n", body)
 		t.Fail()
 		return
 	}
-	fmt.Printf("--------------respose:%s\n", response)
+	// fmt.Printf("--------------respose:%s\n", response)
 
 	if response.Status != RESP_STATUS_SUCC {
 		t.Fail()
