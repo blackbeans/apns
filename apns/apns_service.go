@@ -29,7 +29,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 	respChan := make(chan *entry.Response, 1000)
 
 	deadline := 10 * time.Second
-	err, factory := NewConnPool(1, 1, 1, 10*time.Second, func(id int32) (error, IConn) {
+	err, factory := NewConnPool(10, 20, 50, 10*time.Second, func(id int32) (error, IConn) {
 		err, apnsconn := NewApnsConnection(respChan, cert, pushGateway, deadline, id)
 		return err, apnsconn
 	})
