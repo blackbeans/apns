@@ -124,7 +124,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	for i := 0; i < 3; i++ {
 		self.sendCounter.Incr(1)
 		//直接发送的没有返回值
-		err = conn.(*ApnsConnection).sendMessage(msg)
+		err = conn.sendMessage(msg)
 
 		if nil != err {
 			self.failCounter.Incr(1)

@@ -16,35 +16,53 @@ type ApnsHttpServer struct {
 	pushId       uint32
 	mutex        sync.Mutex
 	expiredTime  uint32
+	httpserver   *MomoHttpServer
 }
 
 func NewApnsHttpServer(option Option) *ApnsHttpServer {
 
 	feedbackChan := make(chan *entry.Feedback, 1000)
-
-	//初始化apns
-	apnsClient := apns.NewDefaultApnsClient(option.cert,
-		option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
+	var apnsClient *apns.ApnsClient
+	if option.startMode == STARTMODE_MOCK {
+		//初始化mock apns
+		apnsClient = apns.NewMockApnsClient(option.cert,
+			option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
+		log.Println("MOCK APNS HTTPSERVER IS STARTING ....")
+	} else {
+		//初始化apns
+		apnsClient = apns.NewDefaultApnsClient(option.cert,
+			option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
+		log.Println("ONLINE APNS HTTPSERVER IS STARTING ....")
+	}
 
 	server := &ApnsHttpServer{feedbackChan: feedbackChan,
 		apnsClient: apnsClient, expiredTime: option.expiredTime}
 
-	http.HandleFunc("/apns/push", server.handlePush)
-	http.HandleFunc("/apns/feedback", server.handleFeedBack)
-	go func() {
-		log.Println("APNS HTTPSERVER IS STARTING ....")
-		err := http.ListenAndServe(option.bindAddr, nil)
-		if nil != err {
-			log.Panicf("APNSHTTPSERVER|LISTEN|FAIL|%s\n", err)
-		} else {
-			log.Panicf("APNSHTTPSERVER|LISTEN|SUCC|%s .....\n", option.bindAddr)
-		}
-	}()
+	//创建http
+	server.httpserver = NewMomoHttpServer(option.bindAddr, nil)
+
+	go server.dial(option.bindAddr)
 
 	return server
 }
 
+func (self *ApnsHttpServer) dial(hp string) {
+
+	log.Println("APNS HTTPSERVER IS STARTING ....")
+	http.DefaultServeMux = http.NewServeMux()
+	http.HandleFunc("/apns/push", self.handlePush)
+	http.HandleFunc("/apns/feedback", self.handleFeedBack)
+	err := self.httpserver.ListenAndServe()
+	if nil != err {
+		log.Printf("APNSHTTPSERVER|LISTEN|FAIL|%s\n", err)
+	} else {
+		log.Printf("APNSHTTPSERVER|LISTEN|SUCC|%s .....\n", hp)
+	}
+
+}
+
 func (self *ApnsHttpServer) Shutdown() {
+	self.httpserver.Shutdonw()
 	self.apnsClient.Destory()
 	log.Println("APNS HTTP SERVER SHUTDOWN SUCC ....")
 

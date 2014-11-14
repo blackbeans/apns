@@ -98,7 +98,7 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 		err = sendFunc()
 	}
 	if nil != err {
-		log.Printf("APNS_HTTP_SERVER|SendNotification|FORMATE:%d|FAIL|IGNORED|%s|%s\n", pushType, payload, err)
+		log.Printf("APNS_HTTP_SERVER|SendNotification|FORMAT:%d|FAIL|IGNORED|%s|%s\n", pushType, payload, err)
 		resp.Status = RESP_STATUS_SEND_OVER_TRY_ERROR
 		resp.Error = err
 	}

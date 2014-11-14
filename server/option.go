@@ -10,6 +10,11 @@ import (
 )
 
 const (
+
+	//--------------启动模式
+	STARTMODE_MOCK   = 0 //启动mock模式 用于压测
+	STARTMODE_ONLINE = 1 //启动线上的模式
+
 	//--------------启动模式
 	RUNMODE_SANDBOX = 0 //启动沙河模式
 	RUNMODE_ONLINE  = 1 //启动线上的模式
@@ -52,6 +57,7 @@ func (self *response) Marshal() []byte {
 }
 
 type Option struct {
+	startMode       int
 	bindAddr        string
 	cert            tls.Certificate
 	pushAddr        string
@@ -60,7 +66,7 @@ type Option struct {
 	storageCapacity int //用于存储临时发送的数据量
 }
 
-func NewOption(bindaddr string, certpath string, keypath string, runmode int, storageCapacity int) Option {
+func NewOption(startMode int, bindaddr string, certpath string, keypath string, runmode int, storageCapacity int) Option {
 	pushaddr := ADDR_SANDBOX
 	feedbackAddr := ADDR_FEEDBACK_SANDBOX
 	if runmode == 1 {
@@ -71,7 +77,7 @@ func NewOption(bindaddr string, certpath string, keypath string, runmode int, st
 	}
 	cert := loadCert(certpath, keypath)
 
-	return Option{bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr, storageCapacity: storageCapacity}
+	return Option{startMode: startMode, bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr, storageCapacity: storageCapacity}
 }
 func loadCert(certpath string, keypath string) tls.Certificate {
 

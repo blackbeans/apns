@@ -19,8 +19,22 @@ const (
 	PROXY_URL       = "http://localhost:17070"
 )
 
+func BenchmarkMockHttpServer(t *testing.B) {
+	option := NewOption(STARTMODE_MOCK, ":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE, 100)
+	option.expiredTime = uint32(6 * 3600)
+	option.storageCapacity = 100
+	server := NewApnsHttpServer(option)
+	fmt.Printf("-------------------mockserver:%s\n", server)
+	for i := 0; i < t.N; i++ {
+		//测试发送
+		innerApsnHttpServerSend(t)
+	}
+
+	defer server.Shutdown()
+}
+
 func TestApnsHttpServer(t *testing.T) {
-	option := NewOption(":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE, 100)
+	option := NewOption(STARTMODE_ONLINE, ":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE, 100)
 	option.expiredTime = uint32(6 * 3600)
 	option.storageCapacity = 100
 	server := NewApnsHttpServer(option)
@@ -34,7 +48,7 @@ func TestApnsHttpServer(t *testing.T) {
 	defer server.Shutdown()
 }
 
-func innerApsnHttpServerSend(t *testing.T) {
+func innerApsnHttpServerSend(t testing.TB) {
 
 	fmt.Println("innerApsnHttpServerSend is Starting")
 

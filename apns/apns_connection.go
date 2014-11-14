@@ -12,6 +12,7 @@ type IConn interface {
 	Open() error
 	IsAlive() bool
 	Close()
+	sendMessage(msg *entry.Message) error
 }
 
 const (
