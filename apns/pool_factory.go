@@ -101,17 +101,26 @@ func (self *ConnPool) Get(timeout time.Duration) (error, IConn) {
 	//***如果在等待的时间内没有获取到client则超时
 
 	clientch := make(chan IConn, 1)
+	timeoutCh := make(chan bool, 1)
 	defer close(clientch)
-	go func() {
+	go func(tc chan bool) {
 		conn := self.innerGet()
-		clientch <- conn
-	}()
+		select {
+		case clientch <- conn:
+		case <-timeoutCh:
+			//如果timeout了则将连接回收
+			self.Release(conn)
+		}
+		close(timeoutCh)
+	}(timeoutCh)
 
 	select {
 	case conn := <-clientch:
 		return nil, conn
 		break
 	case <-time.After(time.Second * timeout):
+		//超时关闭channel，禁止写入
+		timeoutCh <- true
 		return errors.New("POOL|GET CONN|TIMEOUT|FAIL!"), nil
 		break
 	}
