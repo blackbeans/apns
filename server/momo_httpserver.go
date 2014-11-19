@@ -51,9 +51,6 @@ func (sl stoppableListener) Accept() (c net.Conn, err error) {
 
 	for {
 
-		//Wait up to one second for a new connection
-		sl.SetDeadline(time.Now().Add(time.Second))
-
 		tc, err := sl.TCPListener.AcceptTCP()
 
 		//Check for the channel being closed
@@ -66,6 +63,8 @@ func (sl stoppableListener) Accept() (c net.Conn, err error) {
 		if nil == err {
 			tc.SetKeepAlive(true)
 			tc.SetKeepAlivePeriod(3 * time.Minute)
+		} else {
+			return nil, err
 		}
 
 		return tc, err
