@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 )
 
 func main() {
 
+	runtime.GOMAXPROCS(8)
 	startMode := flag.Int("startMode", 1, " 0 为mock ,1 为正式")
 	bindAddr := flag.String("bindAddr", ":17070", "-bindAddr=:17070")
 	certPath := flag.String("certPath", "./cert.pem", "-certPath=xxxxxx/cert.pem or -certPath=http://")

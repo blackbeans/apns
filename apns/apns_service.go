@@ -114,9 +114,9 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 		msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
 		//正常发送的记录即可
 		self.storage.Insert(entry.UmarshalIdentifier(msg), msg)
-		if rand.Intn(100) == 0 {
-			log.Printf("APNSCLIENT|sendMessage|RECORD MESSAGE|%s\n", msg)
-		}
+		// if rand.Intn(100) == 0 {
+		// 	log.Printf("APNSCLIENT|sendMessage|RECORD MESSAGE|%s\n", msg)
+		// }
 	} else {
 		//否则丢弃不开启重发........
 	}
