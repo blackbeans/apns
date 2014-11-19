@@ -135,6 +135,5 @@ func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Reques
 
 func (self *ApnsHttpServer) write(out http.ResponseWriter, resp *response) {
 	out.Header().Set("content-type", "text/json")
-	log.Println(resp)
 	out.Write(resp.Marshal())
 }
