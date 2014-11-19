@@ -5,7 +5,7 @@ import (
 	"errors"
 	"go-apns/entry"
 	"log"
-	"math/rand"
+	_ "math/rand"
 	"time"
 )
 
