@@ -25,6 +25,6 @@ func NewApnsConnectionMock(responseChan chan<- *entry.Response, certificates tls
 
 func (self *ApnsConnectionMock) sendMessage(msg *entry.Message) error {
 	//do nothing
-	log.Println("ApnsConnectionMock|sendMessage|SUCC!")
+	// log.Println("ApnsConnectionMock|sendMessage|SUCC!")
 	return nil
 }
