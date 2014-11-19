@@ -100,32 +100,28 @@ func (self *ConnPool) Get(timeout time.Duration) (error, IConn) {
 
 	//***如果在等待的时间内没有获取到client则超时
 
-	clientch := make(chan IConn, 1)
-	timeoutCh := make(chan bool, 1)
-	defer close(clientch)
-	go func(tc chan bool) {
+	// clientch := make(chan IConn, 1)
+	// timeoutCh := make(chan bool, 1)
+	// defer close(clientch)
+	// go func(tc chan bool) {
+	// clientch <- self.innerGet()
+	// }(timeoutCh)
 
-		select {
-		case clientch <- self.innerGet():
-		case <-timeoutCh:
-			//如果timeout了则将连接回收
-			self.Release(conn)
-		}
-		close(timeoutCh)
-	}(timeoutCh)
-
-	select {
-	case conn := <-clientch:
-		return nil, conn
-		break
-	case <-time.After(time.Second * timeout):
-		//超时关闭channel，禁止写入
-		timeoutCh <- true
-		return errors.New("POOL|GET CONN|TIMEOUT|FAIL!"), nil
-		break
-	}
+	// select {
+	// case conn := <-clientch:
+	// 	close(timeoutCh)
+	// 	return nil, conn
+	// 	break
+	// case <-time.After(time.Second * timeout):
+	// 	//超时关闭channel，禁止写入
+	// 	timeoutCh <- true
+	// 	return errors.New("POOL|GET CONN|TIMEOUT|FAIL!"), nil
+	// 	break
+	// }
 	//here is a bug
-	return nil, nil
+	// return nil, nil
+
+	return nil, self.innerGet()
 }
 
 //返回当前的corepoolszie
