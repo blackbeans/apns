@@ -3,7 +3,7 @@ package apns
 import (
 	"crypto/tls"
 	"go-apns/entry"
-	"log"
+	_ "log"
 	"time"
 )
 
