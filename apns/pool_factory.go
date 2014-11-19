@@ -104,9 +104,9 @@ func (self *ConnPool) Get(timeout time.Duration) (error, IConn) {
 	timeoutCh := make(chan bool, 1)
 	defer close(clientch)
 	go func(tc chan bool) {
-		conn := self.innerGet()
+
 		select {
-		case clientch <- conn:
+		case clientch <- self.innerGet():
 		case <-timeoutCh:
 			//如果timeout了则将连接回收
 			self.Release(conn)
