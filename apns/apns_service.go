@@ -29,7 +29,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 	respChan := make(chan *entry.Response, 1000)
 
 	deadline := 10 * time.Second
-	err, factory := NewConnPool(10, 20, 50, 10*time.Second, func(id int32) (error, IConn) {
+	err, factory := NewConnPool(10, 20, 50, 60*time.Minute, func(id int32) (error, IConn) {
 		err, apnsconn := NewApnsConnection(respChan, cert, pushGateway, deadline, id)
 		return err, apnsconn
 	})
@@ -38,7 +38,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 		log.Panicf("APN SERVICE|CREATE CONNECTION POOL|FAIL|%s", err)
 		return nil
 	}
-	err, feedbackFactory := NewConnPool(1, 2, 5, 10*time.Minute, func(id int32) (error, IConn) {
+	err, feedbackFactory := NewConnPool(1, 2, 5, 60*time.Minute, func(id int32) (error, IConn) {
 		err, conn := NewFeedbackConn(feedbackChan, cert, feedbackGateWay, deadline, id)
 		return err, conn
 	})

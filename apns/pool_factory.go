@@ -99,7 +99,7 @@ func (self *ConnPool) Get(timeout time.Duration) (error, IConn) {
 	}
 
 	//***如果在等待的时间内没有获取到client则超时
-	var conn IConn
+
 	clientch := make(chan IConn, 1)
 	defer close(clientch)
 	go func() {
@@ -108,7 +108,7 @@ func (self *ConnPool) Get(timeout time.Duration) (error, IConn) {
 	}()
 
 	select {
-	case conn = <-clientch:
+	case conn := <-clientch:
 		return nil, conn
 		break
 	case <-time.After(time.Second * timeout):
@@ -169,13 +169,7 @@ func (self *ConnPool) Release(conn IConn) error {
 	}
 
 	//如果当前的corepoolsize 是大于等于设置的corepoolssize的则直接销毁这个client
-	if self.corePoolSize() >= self.corepoolSize {
-
-		idleconn.conn.Close()
-		conn = nil
-
-		//并且从idle
-	} else if succ {
+	if succ && self.corePoolSize() < self.maxPoolSize {
 		self.idlePool.PushFront(idleconn)
 	} else {
 		conn.Close()
