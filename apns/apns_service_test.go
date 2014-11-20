@@ -135,7 +135,7 @@ func (self ConnFacotry) MonitorPool() (int, int, int) {
 	return 1, 1, 1
 }
 
-func (self ConnFacotry) Get(timeout time.Duration) (error, IConn) {
+func (self ConnFacotry) Get() (error, IConn) {
 	return nil, self.conn
 } //获取一个连接
 func (self ConnFacotry) Release(conn IConn) error {

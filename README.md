@@ -64,6 +64,7 @@ Http方式发送IOS PUSH
     )
 
     func main() {
+        startMode := flag.Int("startMode", 1, " 0 为mock ,1 为正式")
         bindAddr := flag.String("bindAddr", ":17070", "-bindAddr=:17070")
         certPath := flag.String("certPath", "", "-certPath=/User/xxx")
         keyPath := flag.String("keyPath", "", "-keyPath=/User/xxx")

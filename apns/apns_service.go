@@ -29,7 +29,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 	respChan := make(chan *entry.Response, 1000)
 
 	deadline := 10 * time.Second
-	err, factory := NewConnPool(10, 20, 50, 60*time.Minute, func(id int32) (error, IConn) {
+	err, factory := NewConnPool(20, 30, 50, 10*time.Minute, func(id int32) (error, IConn) {
 		err, apnsconn := NewApnsConnection(respChan, cert, pushGateway, deadline, id)
 		return err, apnsconn
 	})
@@ -38,7 +38,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 		log.Panicf("APN SERVICE|CREATE CONNECTION POOL|FAIL|%s", err)
 		return nil
 	}
-	err, feedbackFactory := NewConnPool(1, 2, 5, 60*time.Minute, func(id int32) (error, IConn) {
+	err, feedbackFactory := NewConnPool(1, 2, 5, 10*time.Minute, func(id int32) (error, IConn) {
 		err, conn := NewFeedbackConn(feedbackChan, cert, feedbackGateWay, deadline, id)
 		return err, conn
 	})
@@ -103,12 +103,11 @@ func (self *ApnsClient) SendEnhancedNotification(identifier, expiriedTime uint32
 
 func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 
-	err, conn := self.factory.Get(5 * time.Second)
-	if nil != err {
+	err, conn := self.factory.Get()
+	if nil != err || nil == conn {
 		return err
 	}
 	defer self.factory.Release(conn)
-
 	//将当前enchanced发送的数据写入到storage中
 	if nil != self.storage &&
 		msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
@@ -137,7 +136,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 }
 
 func (self *ApnsClient) FetchFeedback(limit int) error {
-	err, conn := self.feedbackFactory.Get(5 * time.Second)
+	err, conn := self.feedbackFactory.Get()
 	if nil != err {
 		return err
 	}
