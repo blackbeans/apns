@@ -4,7 +4,12 @@
     结合feedback过滤当前现有不合法的apnstoken提高送达率
     提供Https方式的发送ios push
     more.....
-
+    
+#### 压测报告
+	ab c=1 n=1000000   ops
+	ab c=10 n=1000000   ops
+	ab c=50 n=1000000   ops
+	ab c=100 n=1000000  ops
 ============
 #### 安装
     go get github.com/blackbeans/go-apns
