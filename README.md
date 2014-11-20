@@ -5,11 +5,12 @@
     提供Https方式的发送ios push
     more.....
     
-#### 压测报告
-	ab c=1 n=1000000   ops
-	ab c=10 n=1000000   ops
-	ab c=50 n=1000000   ops
-	ab c=100 n=1000000  ops
+#### mock压测报告 
+	4 * 2CPU /8GBRAM/50个apns链接
+	http ab压测：
+	ab c=10 n=1000000  8609.94 ops 
+	ab c=50 n=1000000  12146.87 ops
+	ab c=100 n=1000000 12952.80 op
 ============
 #### 安装
     go get github.com/blackbeans/go-apns
