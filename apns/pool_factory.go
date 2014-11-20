@@ -94,13 +94,18 @@ func (self *ConnPool) evict() {
 			self.mutex.Lock()
 			for e := self.idlePool.Back(); nil != e; e = e.Prev() {
 				idleconn := e.Value.(*IdleConn)
-				//如果当前时间在过期时间之后则直接关闭
-				if idleconn.expiredTime.Before(time.Now()) {
+				//如果当前时间在过期时间之后并且活动的链接大于corepoolsize则关闭
+				isExpired := idleconn.expiredTime.Before(time.Now())
+				if isExpired &&
+					self.numActive >= self.corepoolSize {
 					idleconn.conn.Close()
 					idleconn = nil
 					self.idlePool.Remove(e)
 					//并且该表当前的active数量
 					self.numActive--
+				} else if isExpired {
+					//过期的但是已经不够corepoolsize了直接重新设置过期时间
+					idleconn.expiredTime = time.Now().Add(self.idletime)
 				}
 			}
 			self.mutex.Unlock()
