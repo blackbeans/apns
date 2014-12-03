@@ -176,8 +176,11 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
-	conn = nil
-	conn.Close()
+	if nil != conn {
+		conn.Close()
+		conn = nil
+	}
+
 	var err error
 	//只有当前的存活链接和当前工作链接大于0的时候才会去销毁
 	if self.numActive > 0 && self.numWork > 0 {
