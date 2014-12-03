@@ -57,13 +57,26 @@ func NewConnPool(minPoolSize, corepoolSize,
 		running:      true,
 		connectionId: 1}
 
+	err := pool.enhancedPool(pool.minPoolSize)
+	if nil != err {
+		return err, nil
+	}
+
+	//启动链接过期
+	go pool.evict()
+
+	return nil, pool
+}
+
+func (self *ConnPool) enhancedPool(size int) error {
+
 	//初始化一下最小的Poolsize,让入到idlepool中
-	for i := 0; i < pool.minPoolSize; i++ {
+	for i := 0; i < size; i++ {
 		j := 0
 		var err error
 		var conn IConn
 		for ; j < 3; j++ {
-			err, conn = dialFunc(pool.id())
+			err, conn = self.dialFunc(self.id())
 			if nil != err {
 				log.Printf("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s\n", err)
 
@@ -73,18 +86,15 @@ func NewConnPool(minPoolSize, corepoolSize,
 		}
 
 		if j >= 3 {
-			return errors.New("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s" + err.Error()), nil
+			return errors.New("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s" + err.Error())
 		}
 
-		idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(pool.idletime))}
-		pool.idlePool.PushFront(idleconn)
-		pool.numActive++
+		idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(self.idletime))}
+		self.idlePool.PushFront(idleconn)
+		self.numActive++
 	}
 
-	//启动链接过期
-	go pool.evict()
-
-	return nil, pool
+	return nil
 }
 
 func (self *ConnPool) evict() {
@@ -106,6 +116,9 @@ func (self *ConnPool) evict() {
 					self.numActive--
 				} else if isExpired {
 					//过期的但是已经不够corepoolsize了直接重新设置过期时间
+					idleconn.expiredTime = time.Now().Add(self.idletime)
+				} else {
+					//活动的数量小于corepool的则修改存活时间
 					idleconn.expiredTime = time.Now().Add(self.idletime)
 				}
 			}
@@ -163,17 +176,26 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
+	conn = nil
+	conn.Close()
+	var err error
 	//只有当前的存活链接和当前工作链接大于0的时候才会去销毁
 	if self.numActive > 0 && self.numWork > 0 {
 		self.numWork--
 		self.numActive--
+
 	} else {
-		conn.Close()
-		conn = nil
-		return errors.New("POOL|RELEASE BROKEN|INVALID CONN")
+		err = errors.New("POOL|RELEASE BROKEN|INVALID CONN")
 	}
 
-	return nil
+	//判断当前是否连接不是最小连接
+	incrCount := self.minPoolSize - self.numActive
+	if incrCount < 0 {
+		//如果不够最小连接则创建
+		err = self.enhancedPool(incrCount)
+	}
+
+	return err
 }
 
 /**
