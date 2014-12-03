@@ -140,7 +140,13 @@ func (self ConnFacotry) Get() (error, IConn) {
 } //获取一个连接
 func (self ConnFacotry) Release(conn IConn) error {
 	return nil
-} //释放对应的链接
+}
+
+func (self ConnFacotry) ReleaseBroken(conn IConn) error {
+	return nil
+}
+
+//释放对应的链接
 func (self ConnFacotry) Shutdown() {
 	self.conn.Close()
 } //关闭当前的

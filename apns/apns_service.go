@@ -107,7 +107,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	if nil != err || nil == conn {
 		return err
 	}
-	defer self.factory.Release(conn)
+
 	//将当前enchanced发送的数据写入到storage中
 	if nil != self.storage &&
 		msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
@@ -128,7 +128,13 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 		if nil != err {
 			self.failCounter.Incr(1)
 			log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d\n", err, i)
+			//连接有问题直接销毁
+			releaseErr := self.factory.ReleaseBroken(conn)
+			if nil != releaseErr {
+				log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s\n", err)
+			}
 		} else {
+			self.factory.Release(conn)
 			break
 		}
 	}

@@ -11,9 +11,10 @@ import (
 
 //连接工厂
 type IConnFactory interface {
-	Get() (error, IConn)      //获取一个连接
-	Release(conn IConn) error //释放对应的链接
-	Shutdown()                //关闭当前的
+	Get() (error, IConn)            //获取一个连接
+	Release(conn IConn) error       //释放对应的链接
+	ReleaseBroken(conn IConn) error //释放掉坏的连接
+	Shutdown()                      //关闭当前的
 	MonitorPool() (int, int, int)
 }
 
