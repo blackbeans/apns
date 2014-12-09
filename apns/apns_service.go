@@ -102,43 +102,47 @@ func (self *ApnsClient) SendEnhancedNotification(identifier, expiriedTime uint32
 }
 
 func (self *ApnsClient) sendMessage(msg *entry.Message) error {
-
-	err, conn := self.factory.Get()
-	if nil != err || nil == conn {
-		return err
-	}
-
-	//将当前enchanced发送的数据写入到storage中
-	if nil != self.storage &&
-		msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
-		//正常发送的记录即可
-		self.storage.Insert(entry.UmarshalIdentifier(msg), msg)
-		// if rand.Intn(100) == 0 {
-		// 	log.Printf("APNSCLIENT|sendMessage|RECORD MESSAGE|%s\n", msg)
-		// }
-	} else {
-		//否则丢弃不开启重发........
-	}
-
+	var sendError error
+	//重发逻辑
 	for i := 0; i < 3; i++ {
+		err, conn := self.factory.Get()
+		if nil != err || nil == conn {
+			log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s\n", err)
+			sendError = err
+			continue
+		}
+
+		//将当前enchanced发送的数据写入到storage中
+		if nil != self.storage &&
+			msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
+			//正常发送的记录即可
+			self.storage.Insert(entry.UmarshalIdentifier(msg), msg)
+			// if rand.Intn(100) == 0 {
+			// 	log.Printf("APNSCLIENT|sendMessage|RECORD MESSAGE|%s\n", msg)
+			// }
+		} else {
+			//否则丢弃不开启重发........
+		}
+
 		self.sendCounter.Incr(1)
 		//直接发送的没有返回值
-		err = conn.sendMessage(msg)
-
-		if nil != err {
+		sendError = conn.sendMessage(msg)
+		if nil != sendError {
 			self.failCounter.Incr(1)
-			log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d\n", err, i)
+			log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d\n", sendError, i)
 			//连接有问题直接销毁
 			releaseErr := self.factory.ReleaseBroken(conn)
 			if nil != releaseErr {
-				log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s\n", err)
+				log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s\n", releaseErr)
 			}
 		} else {
+			//发送成功归还连接
 			self.factory.Release(conn)
 			break
 		}
 	}
-	return err
+
+	return sendError
 }
 
 func (self *ApnsClient) FetchFeedback(limit int) error {

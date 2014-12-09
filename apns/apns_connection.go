@@ -105,12 +105,17 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 	if nil != err {
 		return err
 	}
-	length, err := self.conn.Write(packet)
-	if nil != err || length != len(packet) {
-		log.Printf("CONNECTION|SEND MESSAGE|FAIL|%s\n", err)
-		return err
+	//单链接重发3次
+	var sendErr error
+	for i := 0; i < 3; i++ {
+		length, err := self.conn.Write(packet)
+		if nil != err || length != len(packet) {
+			sendErr = err
+			log.Printf("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d|%s\n", err, i, msg)
+		}
 	}
-	return nil
+
+	return sendErr
 }
 
 func (self *ApnsConnection) IsAlive() bool {
