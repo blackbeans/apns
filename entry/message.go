@@ -17,7 +17,7 @@ type Message struct {
 	op        byte
 	length    int32
 	items     []*Item
-	ttl       uint8 //存活次数
+	ttl       uint8 //重试的次数
 	MsgType   byte
 	ProcessId int32 //被处理的Id 是不可变的
 }
@@ -26,6 +26,7 @@ func NewMessage(op byte, ttl uint8, msgType byte) *Message {
 	msg := &Message{op: op, ttl: ttl}
 	msg.items = make([]*Item, 0, 2)
 	msg.MsgType = msgType
+
 	return msg
 }
 
@@ -60,6 +61,17 @@ func (self *Message) Encode() (error, []byte) {
 	binary.Write(bytebuff, binary.BigEndian, framebuff.Bytes())
 	return nil, bytebuff.Bytes()
 
+}
+
+func UmarshalExpiredTime(msg *Message) uint32 {
+	if msg.MsgType == MESSAGE_TYPE_ENHANCED {
+		//enchanced 的token位于第三个item
+		id := msg.items[2]
+		return id.data.(uint32)
+
+	}
+	//不过期
+	return 0
 }
 
 //从message重umarshaltoken

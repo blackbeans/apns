@@ -93,7 +93,6 @@ func (self *ApnsConnection) dial() error {
 		}
 		time.Sleep(1 * time.Second)
 	}
-
 	self.conn = conn
 	return nil
 }

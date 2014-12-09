@@ -3,6 +3,7 @@ package apns
 import (
 	"go-apns/entry"
 	"log"
+	"time"
 )
 
 //接受错误的响应并触发重发
@@ -20,8 +21,13 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 		case entry.RESP_SHUTDOWN, entry.RESP_ERROR, entry.RESP_UNKNOW:
 			//只有这三种才重发
 			self.resend(ch, resp.Identifier, func(id uint32, msg *entry.Message) bool {
-				//不是当前连接发送的就直接略过,以及第一个元素是不予以重发的所以要过滤
-				return msg.ProcessId != resp.ProccessId || id == resp.Identifier
+				expiredTime := int64(entry.UmarshalExpiredTime(msg))
+
+				//过滤掉 不是当前连接ID的消息 或者 当前相同ID的消息 或者 (有过期时间结果已经过期的消息)
+				return msg.ProcessId != resp.ProccessId ||
+					id == resp.Identifier ||
+					(0 != expiredTime && (time.Now().Unix()-expiredTime >= 0))
+
 			})
 
 		case entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
