@@ -124,9 +124,9 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 			//否则丢弃不开启重发........
 		}
 
-		self.sendCounter.Incr(1)
 		//直接发送的没有返回值
 		sendError = conn.sendMessage(msg)
+		self.sendCounter.Incr(1)
 		if nil != sendError {
 			self.failCounter.Incr(1)
 			log.Printf("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d\n", sendError, i)

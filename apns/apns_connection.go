@@ -113,6 +113,7 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 			sendErr = err
 			log.Printf("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d|%s\n", err, i, msg)
 		} else {
+			log.Printf("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d|%s\n", i, msg)
 			break
 		}
 	}
