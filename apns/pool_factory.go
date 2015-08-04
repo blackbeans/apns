@@ -193,7 +193,7 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 
 	//判断当前是否连接不是最小连接
 	incrCount := self.minPoolSize - self.numActive
-	if incrCount < 0 {
+	if incrCount > 0 {
 		//如果不够最小连接则创建
 		err = self.enhancedPool(incrCount)
 	}
