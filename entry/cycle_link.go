@@ -73,7 +73,7 @@ func (self *CycleLink) Insert(id uint32, msg *Message) {
 
 		n := &node{id: id, msg: msg}
 		//这里判断一下是否达到了最大的容量，如果达到了就覆盖头节点的数据，否则就pushback
-		if self.length >= self.maxCapacity {
+		if self.length > self.maxCapacity {
 			//删除当前头结点，返回新的头结点
 			self.innerRemove(self.head)
 			// //将头结点的数据改为新的数据，并重新构建hash对应关系

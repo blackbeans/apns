@@ -91,13 +91,12 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 		resp.Error = errors.New("Invalid notification format " + pushType)
 	}
 
-	log.Printf("APNS_HTTP_SERVER|SendNotification|FORMAT:%d|%s\n", pushType, payload)
-
 	//能直接放在chan中异步发送
 	var err error
 	//如果有异常则重试发送
 	if RESP_STATUS_SUCC == resp.Status {
 		err = sendFunc()
+		log.Printf("APNS_HTTP_SERVER|SendNotification|FORMAT:%d|%s|%s\n", pushType, payload, err)
 	}
 	if nil != err {
 		log.Printf("APNS_HTTP_SERVER|SendNotification|FORMAT:%d|FAIL|IGNORED|%s|%s\n", pushType, payload, err)
