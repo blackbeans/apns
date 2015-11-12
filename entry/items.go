@@ -3,7 +3,7 @@ package entry
 import (
 	"encoding/hex"
 	"encoding/json"
-	"log"
+	log "github.com/blackbeans/log4go"
 )
 
 //--------------------payload
@@ -34,7 +34,7 @@ func NewSimplePayLoad(sound string, badge int, body string) *PayLoad {
 func NewPayLoad(sound string, badge int, alert Alert) *PayLoad {
 	data, err := json.Marshal(alert)
 	if nil != err {
-		log.Printf("NEWPAYLOAD|FAIL|ERROR|%s\n", err)
+		log.Error("NEWPAYLOAD|FAIL|ERROR|%s\n", err)
 		return nil
 	}
 	aps := Aps{Alert: string(data), Sound: sound, Badge: badge}
@@ -56,7 +56,7 @@ func (self *PayLoad) Marshal() []byte {
 
 	data, err := json.Marshal(encoddata)
 	if nil != err {
-		log.Printf("PAYLOAD|ENCODE|FAIL|%s", err)
+		log.Error("PAYLOAD|ENCODE|FAIL|%s", err)
 		return nil
 	}
 
@@ -66,7 +66,7 @@ func (self *PayLoad) Marshal() []byte {
 func WrapPayLoad(payload *PayLoad) *Item {
 	payloadJson := payload.Marshal()
 	if nil == payloadJson || len(payloadJson) > 256 {
-		log.Printf("WRAPPAYLOAD|FAIL|%s|len:%d\n", payloadJson, len(payloadJson))
+		log.Error("WRAPPAYLOAD|FAIL|%s|len:%d\n", payloadJson, len(payloadJson))
 		return nil
 	}
 	return &Item{id: PAY_LOAD, length: uint16(len(payloadJson)), data: payloadJson}
@@ -75,7 +75,7 @@ func WrapPayLoad(payload *PayLoad) *Item {
 func WrapDeviceToken(token string) *Item {
 	decodeToken, err := hex.DecodeString(token)
 	if nil != err {
-		log.Printf("WRAPTOKE|FAIL|INVALID TOKEN|%s|%s\n", token, err.Error())
+		log.Error("WRAPTOKE|FAIL|INVALID TOKEN|%s|%s\n", token, err.Error())
 		return nil
 	}
 	return &Item{id: DEVICE_TOKEN, length: uint16(len(decodeToken)), data: decodeToken}

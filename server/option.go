@@ -89,21 +89,21 @@ func loadCert(certpath string, keypath string) tls.Certificate {
 		log.Info("keyPath:%s\ncertPath:%s\n", keypath, certpath)
 		resp, kerr := http.Get(keypath)
 		if nil != kerr {
-			log.Exitf("loading key from [%s] is fail! -> %s\n", keypath, kerr)
+			log.Exitf("loading key from [%s] is fail! -> %s", keypath, kerr)
 		}
 		key, kerr := ioutil.ReadAll(resp.Body)
 		if nil != kerr {
-			log.Exitf("reading key from [%s] is fail! -> %s\n", keypath, kerr)
+			log.Exitf("reading key from [%s] is fail! -> %s", keypath, kerr)
 		}
 		defer resp.Body.Close()
 
 		resp, cerr := http.Get(certpath)
 		if nil != cerr {
-			log.Exitf("loading cert from [%s] is fail! -> %s\n", certpath, cerr)
+			log.Exitf("loading cert from [%s] is fail! -> %s", certpath, cerr)
 		}
 		certb, cerr := ioutil.ReadAll(resp.Body)
 		if nil != cerr {
-			log.Exitf("reading cert from [%s] is fail! -> %s\n", certpath, cerr)
+			log.Exitf("reading cert from [%s] is fail! -> %s", certpath, cerr)
 		}
 
 		defer resp.Body.Close()
@@ -118,7 +118,7 @@ func loadCert(certpath string, keypath string) tls.Certificate {
 	}
 
 	if nil != err {
-		log.Error("LOAD CERT FAIL|%s\n", err.Error())
+		log.Error("LOAD CERT FAIL|%s", err.Error())
 		panic(err)
 	}
 

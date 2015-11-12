@@ -3,7 +3,7 @@ package entry
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
+	log "github.com/blackbeans/log4go"
 	"reflect"
 )
 
@@ -48,7 +48,7 @@ func (self *Message) Encode() (error, []byte) {
 
 		err := binary.Write(framebuff, binary.BigEndian, v.data)
 		if nil != err {
-			log.Printf("MESSAGE|ENCODE|FAIL|%s|%s", err.Error(), v)
+			log.Error("MESSAGE|ENCODE|FAIL|%s|%s", err.Error(), v)
 			return err, nil
 		}
 	}

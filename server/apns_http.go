@@ -54,9 +54,9 @@ func (self *ApnsHttpServer) dial(hp string) {
 	http.HandleFunc("/apns/feedback", self.handleFeedBack)
 	err := self.httpserver.ListenAndServe()
 	if nil != err {
-		log.Error("APNSHTTPSERVER|LISTEN|FAIL|%s\n", err)
+		log.Error("APNSHTTPSERVER|LISTEN|FAIL|%s", err)
 	} else {
-		log.Info("APNSHTTPSERVER|LISTEN|SUCC|%s .....\n", hp)
+		log.Info("APNSHTTPSERVER|LISTEN|SUCC|%s .....", hp)
 	}
 
 }
@@ -64,7 +64,7 @@ func (self *ApnsHttpServer) dial(hp string) {
 func (self *ApnsHttpServer) Shutdown() {
 	self.httpserver.Shutdonw()
 	self.apnsClient.Destory()
-	log.Info("APNS HTTP SERVER SHUTDOWN SUCC ....\n")
+	log.Info("APNS HTTP SERVER SHUTDOWN SUCC ....")
 
 }
 
