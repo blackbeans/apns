@@ -67,7 +67,7 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 			fa, fc, fm := feedbackFactory.MonitorPool()
 			storageCap := client.storage.Length()
 
-			log.Info("APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tstorageLen:%d\tdeliver/fail:%d/%d\n", aa, ac, am, fa, fc, fm, storageCap,
+			log.Info("APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tstorageLen:%d\tdeliver/fail:%d/%d", aa, ac, am, fa, fc, fm, storageCap,
 				client.sendCounter.Changes(), client.failCounter.Changes())
 			time.Sleep(1 * time.Second)
 		}
@@ -107,7 +107,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	for i := 0; i < 3; i++ {
 		err, conn := self.factory.Get()
 		if nil != err || nil == conn {
-			log.Error("APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s\n", err, *msg)
+			log.Error("APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s", err, *msg)
 			sendError = err
 			continue
 		}
@@ -129,11 +129,11 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 		self.sendCounter.Incr(1)
 		if nil != sendError {
 			self.failCounter.Incr(1)
-			log.Error("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d\n", sendError, i)
+			log.Error("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d", sendError, i)
 			//连接有问题直接销毁
 			releaseErr := self.factory.ReleaseBroken(conn)
 			if nil != releaseErr {
-				log.Error("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s\n", releaseErr)
+				log.Error("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s", releaseErr)
 			}
 		} else {
 			//发送成功归还连接

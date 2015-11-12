@@ -56,7 +56,7 @@ func (self *ApnsConnection) waitRepsonse() {
 	//同步读取当前conn的结果
 	length, err := self.conn.Read(buff[:entry.ERROR_RESPONSE])
 	if nil != err || length != len(buff) {
-		log.Info("CONNECTION|%s|READ RESPONSE|FAIL|%s\n", self.name(), err)
+		log.Info("CONNECTION|%s|READ RESPONSE|FAIL|%s", self.name(), err)
 	} else {
 		response := &entry.Response{}
 		response.Unmarshal(buff)
@@ -80,7 +80,7 @@ func (self *ApnsConnection) dial() error {
 	conn, err := tls.Dial("tcp", self.hostport, &config)
 	if nil != err {
 		//connect fail
-		log.Warn("CONNECTION|%s|DIAL CONNECT|FAIL|%s|%s\n", self.name(), self.hostport, err.Error())
+		log.Warn("CONNECTION|%s|DIAL CONNECT|FAIL|%s|%s", self.name(), self.hostport, err.Error())
 		return err
 	}
 
@@ -88,7 +88,7 @@ func (self *ApnsConnection) dial() error {
 	for {
 		state := conn.ConnectionState()
 		if state.HandshakeComplete {
-			log.Info("CONNECTION|%s|HANDSHAKE SUCC\n", self.name())
+			log.Info("CONNECTION|%s|HANDSHAKE SUCC", self.name())
 			break
 		}
 		time.Sleep(1 * time.Second)
@@ -111,9 +111,9 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 		length, err := self.conn.Write(packet)
 		if nil != err || length != len(packet) {
 			sendErr = err
-			log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d|%s\n", err, i, msg)
+			log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d|%s", err, i, msg)
 		} else {
-			log.Debug("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d|%s\n", i, msg)
+			log.Debug("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d|%s", i, msg)
 			break
 		}
 	}

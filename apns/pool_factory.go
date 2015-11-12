@@ -78,7 +78,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 		for ; j < 3; j++ {
 			err, conn = self.dialFunc(self.id())
 			if nil != err {
-				log.Warn("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s\n", err)
+				log.Warn("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s", err)
 
 			} else {
 				break
@@ -243,7 +243,7 @@ func (self *ConnPool) Shutdown() {
 			break
 		}
 
-		log.Info("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d\n", self.numWork)
+		log.Info("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d", self.numWork)
 		i++
 	}
 
