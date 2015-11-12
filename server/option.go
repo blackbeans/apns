@@ -3,8 +3,8 @@ package server
 import (
 	"crypto/tls"
 	"encoding/json"
+	log "github.com/blackbeans/log4go"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -86,24 +86,24 @@ func loadCert(certpath string, keypath string) tls.Certificate {
 	//判断当前文件协议是从http方式读取么
 	if strings.HasPrefix(keypath, "http://") || strings.HasPrefix(keypath, "https://") {
 
-		log.Printf("keyPath:%s\ncertPath:%s\n", keypath, certpath)
+		log.Info("keyPath:%s\ncertPath:%s\n", keypath, certpath)
 		resp, kerr := http.Get(keypath)
 		if nil != kerr {
-			log.Panicf("loading key from [%s] is fail! -> %s\n", keypath, kerr)
+			log.Exitf("loading key from [%s] is fail! -> %s\n", keypath, kerr)
 		}
 		key, kerr := ioutil.ReadAll(resp.Body)
 		if nil != kerr {
-			log.Panicf("reading key from [%s] is fail! -> %s\n", keypath, kerr)
+			log.Exitf("reading key from [%s] is fail! -> %s\n", keypath, kerr)
 		}
 		defer resp.Body.Close()
 
 		resp, cerr := http.Get(certpath)
 		if nil != cerr {
-			log.Panicf("loading cert from [%s] is fail! -> %s\n", certpath, cerr)
+			log.Exitf("loading cert from [%s] is fail! -> %s\n", certpath, cerr)
 		}
 		certb, cerr := ioutil.ReadAll(resp.Body)
 		if nil != cerr {
-			log.Panicf("reading cert from [%s] is fail! -> %s\n", certpath, cerr)
+			log.Exitf("reading cert from [%s] is fail! -> %s\n", certpath, cerr)
 		}
 
 		defer resp.Body.Close()
@@ -118,7 +118,7 @@ func loadCert(certpath string, keypath string) tls.Certificate {
 	}
 
 	if nil != err {
-		log.Printf("LOAD CERT FAIL|%s\n", err.Error())
+		log.Error("LOAD CERT FAIL|%s\n", err.Error())
 		panic(err)
 	}
 

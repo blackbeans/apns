@@ -3,7 +3,7 @@ package apns
 import (
 	"container/list"
 	"errors"
-	"log"
+	log "github.com/blackbeans/log4go"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -78,7 +78,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 		for ; j < 3; j++ {
 			err, conn = self.dialFunc(self.id())
 			if nil != err {
-				log.Printf("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s\n", err)
+				log.Warn("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s\n", err)
 
 			} else {
 				break
@@ -220,7 +220,7 @@ func (self *ConnPool) Release(conn IConn) error {
 	} else {
 		conn.Close()
 		conn = nil
-		log.Printf("POOL|RELEASE|FAIL|%d\n", self.numActive)
+		log.Warn("POOL|RELEASE|FAIL|%d\n", self.numActive)
 		return errors.New("POOL|RELEASE|INVALID CONN")
 	}
 
@@ -243,7 +243,7 @@ func (self *ConnPool) Shutdown() {
 			break
 		}
 
-		log.Printf("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d\n", self.numWork)
+		log.Info("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d\n", self.numWork)
 		i++
 	}
 
@@ -256,5 +256,5 @@ func (self *ConnPool) Shutdown() {
 		idleconn = nil
 	}
 
-	log.Printf("CONNECTION_POOL|SHUTDOWN")
+	log.Info("CONNECTION_POOL|SHUTDOWN")
 }

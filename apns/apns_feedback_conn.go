@@ -2,8 +2,8 @@ package apns
 
 import (
 	"crypto/tls"
+	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
-	"log"
 	"reflect"
 	"time"
 )
@@ -59,6 +59,6 @@ func (self *FeedbackConn) readFeedBack(limit int) {
 		buff = buff[:entry.FEEDBACK_RESP]
 	}
 	//本次读取完毕
-	log.Println("FEEDBACK CONNECTION|READ FEEDBACK|FINISHED!")
+	log.Debug("FEEDBACK CONNECTION|READ FEEDBACK|FINISHED!")
 
 }

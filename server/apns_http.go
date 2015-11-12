@@ -2,9 +2,9 @@ package server
 
 import (
 	"errors"
+	log "github.com/blackbeans/log4go"
 	"go-apns/apns"
 	"go-apns/entry"
-	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -27,12 +27,12 @@ func NewApnsHttpServer(option Option) *ApnsHttpServer {
 		//初始化mock apns
 		apnsClient = apns.NewMockApnsClient(option.cert,
 			option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
-		log.Println("MOCK APNS HTTPSERVER IS STARTING ....")
+		log.Info("MOCK APNS HTTPSERVER IS STARTING ....")
 	} else {
 		//初始化apns
 		apnsClient = apns.NewDefaultApnsClient(option.cert,
 			option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
-		log.Println("ONLINE APNS HTTPSERVER IS STARTING ....")
+		log.Info("ONLINE APNS HTTPSERVER IS STARTING ....")
 	}
 
 	server := &ApnsHttpServer{feedbackChan: feedbackChan,
@@ -48,15 +48,15 @@ func NewApnsHttpServer(option Option) *ApnsHttpServer {
 
 func (self *ApnsHttpServer) dial(hp string) {
 
-	log.Println("APNS HTTPSERVER IS STARTING ....")
+	log.Info("APNS HTTPSERVER IS STARTING ....")
 	http.DefaultServeMux = http.NewServeMux()
 	http.HandleFunc("/apns/push", self.handlePush)
 	http.HandleFunc("/apns/feedback", self.handleFeedBack)
 	err := self.httpserver.ListenAndServe()
 	if nil != err {
-		log.Printf("APNSHTTPSERVER|LISTEN|FAIL|%s\n", err)
+		log.Error("APNSHTTPSERVER|LISTEN|FAIL|%s\n", err)
 	} else {
-		log.Printf("APNSHTTPSERVER|LISTEN|SUCC|%s .....\n", hp)
+		log.Info("APNSHTTPSERVER|LISTEN|SUCC|%s .....\n", hp)
 	}
 
 }
@@ -64,7 +64,7 @@ func (self *ApnsHttpServer) dial(hp string) {
 func (self *ApnsHttpServer) Shutdown() {
 	self.httpserver.Shutdonw()
 	self.apnsClient.Destory()
-	log.Println("APNS HTTP SERVER SHUTDOWN SUCC ....")
+	log.Info("APNS HTTP SERVER SHUTDOWN SUCC ....\n")
 
 }
 

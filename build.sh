@@ -1,4 +1,7 @@
 #!/bin/bash
+
+go get -u github.com/blackbeans/log4go
+
 go build go-apns/entry
 go install go-apns/entry
 go build go-apns/apns

@@ -1,8 +1,8 @@
 package apns
 
 import (
+	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
-	"log"
 	"time"
 )
 
@@ -56,11 +56,11 @@ func (self *ApnsClient) resend(ch chan *entry.Message, id uint32,
 		}
 		//发送之......
 		self.sendMessage(msg)
-		log.Printf("APNSCLIENT|RESEND|%s\n", msg)
+		log.Debug("APNSCLIENT|RESEND|%s\n", msg)
 	}
 }
 
 func (self *ApnsClient) storeInvalidToken(token string) {
 	//这里是里面最后存储不合法的token
-	log.Printf("APNSCLIENT|UnImplement StoreInvalidToken|%s\n", token)
+	log.Warn("APNSCLIENT|UnImplement StoreInvalidToken|%s\n", token)
 }

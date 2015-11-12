@@ -3,8 +3,8 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
-	"log"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -96,10 +96,10 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 	//如果有异常则重试发送
 	if RESP_STATUS_SUCC == resp.Status {
 		err = sendFunc()
-		log.Printf("APNS_HTTP_SERVER|SendNotification|FORMAT:%d|%s|%s\n", pushType, payload, err)
+		log.Info("APNS_HTTP_SERVER|SendNotification|FORMAT:%d|%s|%s\n", pushType, payload, err)
 	}
 	if nil != err {
-		log.Printf("APNS_HTTP_SERVER|SendNotification|FORMAT:%d|FAIL|IGNORED|%s|%s\n", pushType, payload, err)
+		log.ErrorLog("go-apns", "APNS_HTTP_SERVER|SendNotification|FORMAT:%d|FAIL|IGNORED|%s|%s\n", pushType, payload, err)
 		resp.Status = RESP_STATUS_SEND_OVER_TRY_ERROR
 		resp.Error = err
 	}

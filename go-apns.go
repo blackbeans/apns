@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
+	log "github.com/blackbeans/log4go"
 	"go-apns/server"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -28,6 +28,7 @@ func main() {
 	//kill掉的server
 	<-ch
 	apnsserver.Shutdown()
-	log.Println("APNS SERVER IS STOPPED!")
+
+	log.Info("APNS SERVER IS STOPPED!")
 
 }
