@@ -5,7 +5,6 @@ import (
 	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
 	"reflect"
-	"net"
 	"time"
 )
 
