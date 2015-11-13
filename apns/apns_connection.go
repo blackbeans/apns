@@ -57,6 +57,7 @@ func (self *ApnsConnection) waitRepsonse() {
 	length, err := self.conn.Read(buff[:entry.ERROR_RESPONSE])
 	if nil != err || length != len(buff) {
 		log.Info("CONNECTION|%s|READ RESPONSE|FAIL|%s", self.name(), err)
+		//有异常直接停掉当前的连接
 	} else {
 		response := &entry.Response{}
 		response.Unmarshal(buff)
@@ -111,9 +112,9 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 		length, err := self.conn.Write(packet)
 		if nil != err || length != len(packet) {
 			sendErr = err
-			log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d|%s", err, i, msg)
+			log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d", err, i)
 		} else {
-			log.Debug("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d|%s", i, msg)
+			log.Debug("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d", i)
 			break
 		}
 	}
