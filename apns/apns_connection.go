@@ -5,6 +5,7 @@ import (
 	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
 	"reflect"
+	"net"
 	"time"
 )
 
@@ -16,7 +17,7 @@ type IConn interface {
 }
 
 const (
-	CONN_READ_BUFFER_SIZE  = 256
+	CONN_READ_BUFFER_SIZE = 256
 	CONN_WRITE_BUFFER_SIZE = 512
 )
 
@@ -25,12 +26,12 @@ type ApnsConnection struct {
 	hostport     string
 	deadline     time.Duration
 	conn         *tls.Conn
-	responseChan chan<- *entry.Response
-	alive        bool  //是否存活
-	connectionId int32 //当前连接的标识
+	responseChan chan <- *entry.Response
+	alive        bool            //是否存活
+	connectionId int32           //当前连接的标识
 }
 
-func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
+func NewApnsConnection(responseChan chan <- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
 
 	conn := &ApnsConnection{cert: certificates,
 		hostport:     hostport,
@@ -105,17 +106,14 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 	if nil != err {
 		return err
 	}
-	//单链接重发3次
-	var sendErr error
-	for i := 0; i < 3; i++ {
-		length, err := self.conn.Write(packet)
-		if nil != err || length != len(packet) {
-			sendErr = err
-			log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d", err, i)
-		} else {
-			log.Debug("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d", i)
-			break
-		}
+
+
+	length, sendErr := self.conn.Write(packet)
+	if nil != err || length != len(packet) {
+		log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d", err)
+	} else {
+		log.Debug("CONNECTION|SEND MESSAGE|SUCC")
+
 	}
 
 	return sendErr

@@ -152,7 +152,7 @@ func (self *ConnPool) Get() (error, IConn) {
 	}
 
 	//如果当前依然是conn
-	if nil == conn {
+	if nil == conn || !conn.IsAlive(){
 		//只有当前活动的链接小于最大的则创建
 		if self.numActive < self.maxPoolSize {
 			//如果没有可用链接则创建一个
