@@ -111,9 +111,9 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 		length, err := self.conn.Write(packet)
 		if nil != err || length != len(packet) {
 			sendErr = err
-			log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d|%s", err, i, msg)
+			log.Warn("CONNECTION|SEND MESSAGE|FAIL|%s|tryCount:%d", err, i)
 		} else {
-			log.Debug("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d|%s", i, msg)
+			log.Debug("CONNECTION|SEND MESSAGE|SUCC|tryCount:%d", i)
 			break
 		}
 	}
