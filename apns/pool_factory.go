@@ -145,14 +145,22 @@ func (self *ConnPool) Get() (error, IConn) {
 	var err error
 	//先从Idealpool中获取如果存在那么就直接使用
 	if self.idlePool.Len() > 0 {
-		e := self.idlePool.Back()
-		idle := e.Value.(*IdleConn)
-		self.idlePool.Remove(e)
-		conn = idle.conn
+		for{
+			e := self.idlePool.Back()
+			idle := e.Value.(*IdleConn)
+			self.idlePool.Remove(e)
+			conn = idle.conn
+			if conn.IsAlive(){
+			   break
+			}else{
+				//归还broken Conn
+				self.ReleaseBroken(conn);
+			}
+		}
 	}
 
 	//如果当前依然是conn
-	if nil == conn || !conn.IsAlive(){
+	if nil == conn{
 		//只有当前活动的链接小于最大的则创建
 		if self.numActive < self.maxPoolSize {
 			//如果没有可用链接则创建一个
@@ -186,21 +194,13 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 
 	var err error
 	//只有当前的存活链接和当前工作链接大于0的时候才会去销毁
-	if self.numActive > 0 && self.numWork > 0 {
+	if self.numWork > 0  && self.numActive > 0{
 		self.numWork--
 		self.numActive--
 
 	} else {
 		err = errors.New("POOL|RELEASE BROKEN|INVALID CONN")
 	}
-
-	//判断当前是否连接不是最小连接
-	incrCount := self.minPoolSize - self.numActive
-	if incrCount > 0 {
-		//如果不够最小连接则创建
-		err = self.enhancedPool(incrCount)
-	}
-
 	return err
 }
 
