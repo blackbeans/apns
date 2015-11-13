@@ -22,14 +22,14 @@ type ApnsClient struct {
 }
 
 func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
-	feedbackChan chan<- *entry.Feedback, feedbackGateWay string,
-	storage entry.IMessageStorage) *ApnsClient {
+feedbackChan chan <- *entry.Feedback, feedbackGateWay string,
+storage entry.IMessageStorage) *ApnsClient {
 
 	//发送失败后的响应channel
 	respChan := make(chan *entry.Response, 1000)
 
 	deadline := 10 * time.Second
-	err, factory := NewConnPool(20, 30, 50, 10*time.Minute, func(id int32) (error, IConn) {
+	err, factory := NewConnPool(20, 30, 50, 10 * time.Minute, func(id int32) (error, IConn) {
 		err, apnsconn := NewApnsConnection(respChan, cert, pushGateway, deadline, id)
 		return err, apnsconn
 	})
@@ -38,7 +38,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 		log.Critical("APN SERVICE|CREATE CONNECTION POOL|FAIL|%s", err)
 		return nil
 	}
-	err, feedbackFactory := NewConnPool(1, 2, 5, 10*time.Minute, func(id int32) (error, IConn) {
+	err, feedbackFactory := NewConnPool(1, 2, 5, 10 * time.Minute, func(id int32) (error, IConn) {
 		err, conn := NewFeedbackConn(feedbackChan, cert, feedbackGateWay, deadline, id)
 		return err, conn
 	})
@@ -57,7 +57,7 @@ func NewApnsClient(factory IConnFactory, feedbackFactory IConnFactory, storage e
 }
 
 func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
-	storage entry.IMessageStorage, responseChannel chan *entry.Response) *ApnsClient {
+storage entry.IMessageStorage, responseChannel chan *entry.Response) *ApnsClient {
 
 	client := &ApnsClient{factory: factory, feedbackFactory: feedbackFactory,
 		running: true, maxttl: 3, storage: storage, sendCounter: &entry.Counter{}, failCounter: &entry.Counter{}}
@@ -114,7 +114,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 
 		//将当前enchanced发送的数据写入到storage中
 		if nil != self.storage &&
-			msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
+		msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
 			//正常发送的记录即可
 			self.storage.Insert(entry.UmarshalIdentifier(msg), msg)
 			// if rand.Intn(100) == 0 {
@@ -129,12 +129,10 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 		self.sendCounter.Incr(1)
 		if nil != sendError {
 			self.failCounter.Incr(1)
-			log.Error("APNSCLIENT|SEND MESSAGE|FAIL|%s|tryCount:%d", sendError, i)
 			//连接有问题直接销毁
 			releaseErr := self.factory.ReleaseBroken(conn)
-			if nil != releaseErr {
-				log.Error("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s", releaseErr)
-			}
+			log.Debug("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s", releaseErr)
+
 		} else {
 			//发送成功归还连接
 			self.factory.Release(conn)
