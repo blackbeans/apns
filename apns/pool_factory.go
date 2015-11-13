@@ -28,13 +28,13 @@ type ConnPool struct {
 	numWork      int           //当前正在工作的client
 	idletime     time.Duration //空闲时间
 
-	idlePool *list.List //空闲连接
+	idlePool     *list.List    //空闲连接
 
-	running bool
+	running      bool
 
-	connectionId int32 //链接的Id
+	connectionId int32         //链接的Id
 
-	mutex sync.Mutex //全局锁
+	mutex        sync.Mutex    //全局锁
 }
 
 type IdleConn struct {
@@ -117,9 +117,9 @@ func (self *ConnPool) evict() {
 				}
 			}
 
-			//检查当前的连接数是否满足corepoolsize,不满足则创建
+		//检查当前的连接数是否满足corepoolsize,不满足则创建
 			enhanceSize := self.corepoolSize - self.numActive
-			if enhanceSize > 0{
+			if enhanceSize > 0 {
 				//创建这个数量的连接
 				self.enhancedPool(enhanceSize);
 			}
@@ -145,22 +145,22 @@ func (self *ConnPool) Get() (error, IConn) {
 	var err error
 	//先从Idealpool中获取如果存在那么就直接使用
 	if self.idlePool.Len() > 0 {
-		for{
+		for {
 			e := self.idlePool.Back()
 			idle := e.Value.(*IdleConn)
 			self.idlePool.Remove(e)
 			conn = idle.conn
-			if conn.IsAlive(){
-			   break
-			}else{
+			if conn.IsAlive() {
+				break
+			}else {
 				//归还broken Conn
-				self.ReleaseBroken(conn);
+				self.numActive--
 			}
 		}
 	}
 
 	//如果当前依然是conn
-	if nil == conn{
+	if nil == conn {
 		//只有当前活动的链接小于最大的则创建
 		if self.numActive < self.maxPoolSize {
 			//如果没有可用链接则创建一个
@@ -195,10 +195,10 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 	//只有当前的存活链接和当前工作链接大于0的时候才会去销毁
-	if self.numWork > 0  && self.numActive > 0{
+	if self.numWork > 0  && self.numActive > 0 {
 		self.numWork--
 		self.numActive--
-		log.Debug("POOL|ReleaseBroken|SUCC|%d/%d\n", self.numActive,self.numWork)
+		log.Debug("POOL|ReleaseBroken|SUCC|%d/%d\n", self.numActive, self.numWork)
 
 	} else {
 		err = errors.New("POOL|RELEASE BROKEN|INVALID CONN")
@@ -221,7 +221,7 @@ func (self *ConnPool) Release(conn IConn) error {
 		self.idlePool.PushFront(idleconn)
 		//工作链接数量--
 		self.numWork--
-		log.Debug("POOL|RELEASE|SUCC|%d/%d\n", self.numActive,self.numWork)
+		log.Debug("POOL|RELEASE|SUCC|%d/%d\n", self.numActive, self.numWork)
 		return nil
 	} else {
 		conn.Close()
