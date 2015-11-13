@@ -43,8 +43,8 @@ type IdleConn struct {
 }
 
 func NewConnPool(minPoolSize, corepoolSize,
-	maxPoolSize int, idletime time.Duration,
-	dialFunc func(connectionId int32) (error, IConn)) (error, *ConnPool) {
+maxPoolSize int, idletime time.Duration,
+dialFunc func(connectionId int32) (error, IConn)) (error, *ConnPool) {
 
 	idlePool := list.New()
 	pool := &ConnPool{
@@ -105,18 +105,15 @@ func (self *ConnPool) evict() {
 			self.mutex.Lock()
 			for e := self.idlePool.Back(); nil != e; e = e.Prev() {
 				idleconn := e.Value.(*IdleConn)
-				//如果当前时间在过期时间之后并且活动的链接大于corepoolsize则关闭
+				//如果当前时间在过期时间之后或者活动的链接大于corepoolsize则关闭
 				isExpired := idleconn.expiredTime.Before(time.Now())
-				if isExpired &&
-					self.numActive >= self.corepoolSize {
+				if isExpired ||
+				self.numActive >= self.corepoolSize {
 					idleconn.conn.Close()
 					idleconn = nil
 					self.idlePool.Remove(e)
 					//并且该表当前的active数量
 					self.numActive--
-				} else if isExpired {
-					//过期的但是已经不够corepoolsize了直接重新设置过期时间
-					idleconn.expiredTime = time.Now().Add(self.idletime)
 				} else {
 					//活动的数量小于corepool的则修改存活时间
 					idleconn.expiredTime = time.Now().Add(self.idletime)

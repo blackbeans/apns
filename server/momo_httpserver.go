@@ -1,7 +1,7 @@
 package server
 
 import (
-	// "errors"
+// "errors"
 	"errors"
 	"net"
 	"net/http"
@@ -62,7 +62,7 @@ func (sl stoppableListener) Accept() (c net.Conn, err error) {
 		case <-sl.stop:
 			return nil, errors.New("STOP LISTEN!")
 		default:
-			//If the channel is still open, continue as normal
+		//If the channel is still open, continue as normal
 		}
 		if nil == err {
 			tc.SetKeepAlive(true)
