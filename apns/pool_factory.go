@@ -114,11 +114,17 @@ func (self *ConnPool) evict() {
 					self.idlePool.Remove(e)
 					//并且该表当前的active数量
 					self.numActive--
-				} else {
-					//活动的数量小于corepool的则修改存活时间
-					idleconn.expiredTime = time.Now().Add(self.idletime)
 				}
 			}
+
+			//检查当前的连接数是否满足corepoolsize,不满足则创建
+			enhanceSize := self.corepoolSize - self.numActive
+			if enhanceSize > 0{
+				//创建这个数量的连接
+				self.enhancedPool(enhanceSize);
+			}
+
+
 			self.mutex.Unlock()
 		}
 	}
