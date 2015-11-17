@@ -77,7 +77,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 		var conn IConn
 		for ; j < 3; j++ {
 			err, conn = self.dialFunc(self.id())
-			if nil != err {
+			if nil != err || nil == conn {
 				log.Warn("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s", err)
 				continue
 
@@ -86,7 +86,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 			}
 		}
 
-		if j >= 3 {
+		if j >= 3 && nil == conn {
 			return errors.New("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s" + err.Error())
 		}
 
@@ -152,7 +152,6 @@ func (self *ConnPool) Get() (error, IConn) {
 			break
 		} else {
 			//归还broken Conn
-			conn.Close()
 			self.idlePool.Remove(e)
 			self.numActive--
 		}

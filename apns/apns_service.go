@@ -106,7 +106,6 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	//重发逻辑
 	for i := 0; i < 3; i++ {
 
-		log.Debug("APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|TRACE|%s|%d", *msg, i)
 		err, conn := self.factory.Get()
 		if nil != err || nil == conn {
 			log.Error("APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s", err, *msg)
