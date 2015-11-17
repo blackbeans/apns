@@ -148,14 +148,19 @@ func (self *ConnPool) Get() (error, IConn) {
 	if self.idlePool.Len() > 0 {
 		for {
 			e := self.idlePool.Back()
-			idle := e.Value.(*IdleConn)
-			self.idlePool.Remove(e)
-			conn = idle.conn
-			if conn.IsAlive() {
-				break
+			//如果不为空则
+			if nil != e {
+				idle := e.Value.(*IdleConn)
+				self.idlePool.Remove(e)
+				conn = idle.conn
+				if conn.IsAlive() {
+					break
+				} else {
+					//归还broken Conn
+					self.numActive--
+				}
 			} else {
-				//归还broken Conn
-				self.numActive--
+				break
 			}
 		}
 	}
