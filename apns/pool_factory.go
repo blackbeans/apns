@@ -145,23 +145,16 @@ func (self *ConnPool) Get() (error, IConn) {
 	var conn IConn
 	var err error
 	//先从Idealpool中获取如果存在那么就直接使用
-	if self.idlePool.Len() > 0 {
-		for {
-			e := self.idlePool.Back()
-			//如果不为空则
-			if nil != e {
-				idle := e.Value.(*IdleConn)
-				self.idlePool.Remove(e)
-				conn = idle.conn
-				if conn.IsAlive() {
-					break
-				} else {
-					//归还broken Conn
-					self.numActive--
-				}
-			} else {
-				break
-			}
+	for e := self.idlePool.Back(); nil != e; e = e.Prev() {
+		idle := e.Value.(*IdleConn)
+		conn = idle.conn
+		if conn.IsAlive() {
+			break
+		} else {
+			//归还broken Conn
+			conn.Close()
+			self.idlePool.Remove(e)
+			self.numActive--
 		}
 	}
 
