@@ -101,30 +101,34 @@ func (self *ConnPool) evict() {
 
 		select {
 		case <-time.After(self.idletime):
-			self.mutex.Lock()
-			defer self.mutex.Unlock()
-			for e := self.idlePool.Back(); nil != e; e = e.Prev() {
-				idleconn := e.Value.(*IdleConn)
-				//如果当前时间在过期时间之后或者活动的链接大于corepoolsize则关闭
-				isExpired := idleconn.expiredTime.Before(time.Now())
-				if isExpired ||
-					(self.idlePool.Len()+self.workPool.Len()) > self.corepoolSize {
-					idleconn.conn.Close()
-					idleconn = nil
-					self.idlePool.Remove(e)
-					log.Debug("POOL_FACTORY|evict|Expired|%d/%d/%d",
-						self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len()))
-				}
-			}
-
-			//检查当前的连接数是否满足corepoolSize,不满足则创建
-			enhanceSize := self.corepoolSize - (self.idlePool.Len() + self.workPool.Len())
-			if enhanceSize > 0 {
-				//创建这个数量的连接
-				self.enhancedPool(enhanceSize)
-			}
-
+			self.checkIdle()
 		}
+	}
+}
+
+//检查idle的数据
+func (self *ConnPool) checkIdle() {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+	for e := self.idlePool.Back(); nil != e; e = e.Prev() {
+		idleconn := e.Value.(*IdleConn)
+		//如果当前时间在过期时间之后或者活动的链接大于corepoolsize则关闭
+		isExpired := idleconn.expiredTime.Before(time.Now())
+		if isExpired ||
+			(self.idlePool.Len()+self.workPool.Len()) > self.corepoolSize {
+			idleconn.conn.Close()
+			idleconn = nil
+			self.idlePool.Remove(e)
+			log.Debug("POOL_FACTORY|evict|Expired|%d/%d/%d",
+				self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len()))
+		}
+	}
+
+	//检查当前的连接数是否满足corepoolSize,不满足则创建
+	enhanceSize := self.corepoolSize - (self.idlePool.Len() + self.workPool.Len())
+	if enhanceSize > 0 {
+		//创建这个数量的连接
+		self.enhancedPool(enhanceSize)
 	}
 }
 
