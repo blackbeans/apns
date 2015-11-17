@@ -148,11 +148,13 @@ func (self *ConnPool) Get() (error, IConn) {
 	for e := self.idlePool.Back(); nil != e; e = e.Prev() {
 		idle := e.Value.(*IdleConn)
 		conn = idle.conn
+		//从idle列表中移除要么是存活的
+		//要么是不存活都需要移除
+		self.idlePool.Remove(e)
 		if conn.IsAlive() {
 			break
 		} else {
 			//归还broken Conn
-			self.idlePool.Remove(e)
 			conn = nil
 		}
 	}
