@@ -2,6 +2,7 @@ package apns
 
 import (
 	"crypto/tls"
+	"errors"
 	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
 	"reflect"
@@ -16,7 +17,7 @@ type IConn interface {
 }
 
 const (
-	CONN_READ_BUFFER_SIZE = 256
+	CONN_READ_BUFFER_SIZE  = 256
 	CONN_WRITE_BUFFER_SIZE = 512
 )
 
@@ -25,12 +26,12 @@ type ApnsConnection struct {
 	hostport     string
 	deadline     time.Duration
 	conn         *tls.Conn
-	responseChan chan <- *entry.Response
-	alive        bool            //是否存活
-	connectionId int32           //当前连接的标识
+	responseChan chan<- *entry.Response
+	alive        bool  //是否存活
+	connectionId int32 //当前连接的标识
 }
 
-func NewApnsConnection(responseChan chan <- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
+func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
 
 	conn := &ApnsConnection{cert: certificates,
 		hostport:     hostport,
@@ -40,13 +41,30 @@ func NewApnsConnection(responseChan chan <- *entry.Response, certificates tls.Ce
 }
 
 func (self *ApnsConnection) Open() error {
-	err := self.dial()
-	if nil != err {
-		return err
+	ch := make(chan error, 1)
+	go func() {
+		err := self.dial()
+		if nil != err {
+			ch <- err
+		} else {
+			ch <- nil
+		}
+	}()
+
+	//创建打开连接5s超时
+	select {
+	case err := <-ch:
+		if nil != err {
+			return err
+		}
+		//启动读取数据
+		go self.waitRepsonse()
+		self.alive = true
+	case <-time.After(5 * time.Second):
+		return errors.New("open apnsconnection timeout!")
+	default:
+		return nil
 	}
-	//启动读取数据
-	go self.waitRepsonse()
-	self.alive = true
 	return nil
 }
 
@@ -105,7 +123,6 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 	if nil != err {
 		return err
 	}
-
 
 	length, sendErr := self.conn.Write(packet)
 	if nil != err || length != len(packet) {

@@ -28,13 +28,13 @@ type ConnPool struct {
 	numWork      int           //当前正在工作的client
 	idletime     time.Duration //空闲时间
 
-	idlePool     *list.List    //空闲连接
+	idlePool *list.List //空闲连接
 
-	running      bool
+	running bool
 
-	connectionId int32         //链接的Id
+	connectionId int32 //链接的Id
 
-	mutex        sync.Mutex    //全局锁
+	mutex sync.Mutex //全局锁
 }
 
 type IdleConn struct {
@@ -43,8 +43,8 @@ type IdleConn struct {
 }
 
 func NewConnPool(minPoolSize, corepoolSize,
-maxPoolSize int, idletime time.Duration,
-dialFunc func(connectionId int32) (error, IConn)) (error, *ConnPool) {
+	maxPoolSize int, idletime time.Duration,
+	dialFunc func(connectionId int32) (error, IConn)) (error, *ConnPool) {
 
 	idlePool := list.New()
 	pool := &ConnPool{
@@ -79,6 +79,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 			err, conn = self.dialFunc(self.id())
 			if nil != err {
 				log.Warn("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s", err)
+				continue
 
 			} else {
 				break
@@ -103,12 +104,13 @@ func (self *ConnPool) evict() {
 		select {
 		case <-time.After(self.idletime):
 			self.mutex.Lock()
+			defer self.mutex.Unlock()
 			for e := self.idlePool.Back(); nil != e; e = e.Prev() {
 				idleconn := e.Value.(*IdleConn)
 				//如果当前时间在过期时间之后或者活动的链接大于corepoolsize则关闭
 				isExpired := idleconn.expiredTime.Before(time.Now())
 				if isExpired ||
-				self.numActive > self.corepoolSize {
+					self.numActive > self.corepoolSize {
 					idleconn.conn.Close()
 					idleconn = nil
 					self.idlePool.Remove(e)
@@ -117,15 +119,13 @@ func (self *ConnPool) evict() {
 				}
 			}
 
-		//检查当前的连接数是否满足corepoolsize,不满足则创建
+			//检查当前的连接数是否满足corepoolsize,不满足则创建
 			enhanceSize := self.corepoolSize - self.numActive
 			if enhanceSize > 0 {
 				//创建这个数量的连接
-				self.enhancedPool(enhanceSize);
+				self.enhancedPool(enhanceSize)
 			}
 
-
-			self.mutex.Unlock()
 		}
 	}
 }
@@ -135,12 +135,13 @@ func (self *ConnPool) MonitorPool() (int, int, int) {
 }
 
 func (self *ConnPool) Get() (error, IConn) {
-	self.mutex.Lock()
-	defer self.mutex.Unlock()
+
 	if !self.running {
 		return errors.New("POOL_FACTORY|POOL IS SHUTDOWN"), nil
 	}
 
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 	var conn IConn
 	var err error
 	//先从Idealpool中获取如果存在那么就直接使用
@@ -152,7 +153,7 @@ func (self *ConnPool) Get() (error, IConn) {
 			conn = idle.conn
 			if conn.IsAlive() {
 				break
-			}else {
+			} else {
 				//归还broken Conn
 				self.numActive--
 			}
@@ -185,7 +186,6 @@ func (self *ConnPool) Get() (error, IConn) {
 //释放坏的资源
 func (self *ConnPool) ReleaseBroken(conn IConn) error {
 
-
 	if nil != conn {
 		conn.Close()
 		conn = nil
@@ -195,7 +195,7 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 	//只有当前的存活链接和当前工作链接大于0的时候才会去销毁
-	if self.numWork > 0  && self.numActive > 0 {
+	if self.numWork > 0 && self.numActive > 0 {
 		self.numWork--
 		self.numActive--
 		log.Debug("POOL|ReleaseBroken|SUCC|%d/%d\n", self.numActive, self.numWork)
