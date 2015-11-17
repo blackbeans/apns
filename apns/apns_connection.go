@@ -58,8 +58,6 @@ func (self *ApnsConnection) Open() error {
 
 	case <-time.After(5 * time.Second):
 		return errors.New("open apnsconnection timeout!")
-	default:
-		return nil
 	}
 	return nil
 }
