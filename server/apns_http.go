@@ -49,9 +49,9 @@ func NewApnsHttpServer(option Option) *ApnsHttpServer {
 func (self *ApnsHttpServer) dial(hp string) {
 
 	log.Info("APNS HTTPSERVER IS STARTING ....")
-	http.DefaultServeMux = http.NewServeMux()
 	http.HandleFunc("/apns/push", self.handlePush)
 	http.HandleFunc("/apns/feedback", self.handleFeedBack)
+
 	err := self.httpserver.ListenAndServe()
 	if nil != err {
 		log.Error("APNSHTTPSERVER|LISTEN|FAIL|%s", err)

@@ -119,8 +119,8 @@ func (self *ConnPool) evict() {
 				}
 			}
 
-			//检查当前的连接数是否满足corepoolsize,不满足则创建
-			enhanceSize := self.corepoolSize - self.numActive
+			//检查当前的连接数是否满足minPoolSize,不满足则创建
+			enhanceSize := self.minPoolSize - self.numActive
 			if enhanceSize > 0 {
 				//创建这个数量的连接
 				self.enhancedPool(enhanceSize)

@@ -4,6 +4,9 @@ import (
 	"flag"
 	log "github.com/blackbeans/log4go"
 	"go-apns/server"
+	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -18,7 +21,19 @@ func main() {
 	keyPath := flag.String("keyPath", "./key.pem", "-keyPath=xxxxxx/key.pem or -keyPath=http://")
 	runMode := flag.Int("runMode", 0, "-runMode=1(online) ,0(sandbox)")
 	storeCap := flag.Int("storeCap", 0, "-storeCap=100000  //重发链条长度")
+	logxml := flag.String("log", "log.xml", "-log=log.xml //log配置文件")
+	pprofPort := flag.String("pprof", ":9090", "pprof=:9090 //端口")
 	flag.Parse()
+
+	go func() {
+		if len(*pprofPort) > 0 {
+			addr, _ := net.ResolveTCPAddr("tcp4", *bindAddr)
+			log.Error(http.ListenAndServe(addr.IP.String()+*pprofPort, nil))
+		}
+	}()
+
+	//加载log4go的配置
+	log.LoadConfiguration(*logxml)
 
 	//设置启动项
 	option := server.NewOption(*startMode, *bindAddr, *certPath, *keyPath, *runMode, *storeCap)
