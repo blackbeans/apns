@@ -43,12 +43,7 @@ func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Cer
 func (self *ApnsConnection) Open() error {
 	ch := make(chan error, 1)
 	go func() {
-		err := self.dial()
-		if nil != err {
-			ch <- err
-		} else {
-			ch <- nil
-		}
+		ch <- self.dial()
 	}()
 
 	//创建打开连接5s超时

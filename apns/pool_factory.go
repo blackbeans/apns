@@ -25,9 +25,9 @@ type ConnPool struct {
 	minPoolSize  int           //最小连接池大小
 	corepoolSize int           //核心池子大小
 	numActive    int           //当前正在存活的client
-	numWork      int           //当前正在工作的client
 	idletime     time.Duration //空闲时间
 
+	workPool *list.List //当前正在工作的client
 	idlePool *list.List //空闲连接
 
 	running bool
@@ -46,16 +46,16 @@ func NewConnPool(minPoolSize, corepoolSize,
 	maxPoolSize int, idletime time.Duration,
 	dialFunc func(connectionId int32) (error, IConn)) (error, *ConnPool) {
 
-	idlePool := list.New()
 	pool := &ConnPool{
 		maxPoolSize:  maxPoolSize,
 		corepoolSize: corepoolSize,
 		minPoolSize:  minPoolSize,
 		idletime:     idletime,
-		idlePool:     idlePool,
 		dialFunc:     dialFunc,
 		running:      true,
-		connectionId: 1}
+		connectionId: 1,
+		idlePool:     list.New(),
+		workPool:     list.New()}
 
 	err := pool.enhancedPool(pool.corepoolSize)
 	if nil != err {
@@ -86,7 +86,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 			}
 		}
 
-		if j >= 3 && nil == conn {
+		if j >= 3 || nil == conn {
 			return errors.New("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s" + err.Error())
 		}
 
@@ -110,14 +110,12 @@ func (self *ConnPool) evict() {
 				//如果当前时间在过期时间之后或者活动的链接大于corepoolsize则关闭
 				isExpired := idleconn.expiredTime.Before(time.Now())
 				if isExpired ||
-					self.numActive > self.corepoolSize {
+					(self.idlePool.Len()+self.workPool.Len()) > self.corepoolSize {
 					idleconn.conn.Close()
 					idleconn = nil
 					self.idlePool.Remove(e)
-					//并且该表当前的active数量
-					self.numActive--
 					log.Debug("POOL_FACTORY|evict|Expired|%d/%d/%d",
-						self.numWork, self.numActive, self.idlePool.Len())
+						self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len()))
 				}
 			}
 
@@ -133,7 +131,7 @@ func (self *ConnPool) evict() {
 }
 
 func (self *ConnPool) MonitorPool() (int, int, int) {
-	return self.numWork, self.idlePool.Len(), self.numActive
+	return self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len())
 }
 
 func (self *ConnPool) Get() (error, IConn) {
@@ -155,7 +153,6 @@ func (self *ConnPool) Get() (error, IConn) {
 		} else {
 			//归还broken Conn
 			self.idlePool.Remove(e)
-			self.numActive--
 			conn = nil
 		}
 	}
@@ -163,21 +160,19 @@ func (self *ConnPool) Get() (error, IConn) {
 	//如果当前依然是conn
 	if nil == conn {
 		//只有当前活动的链接小于最大的则创建
-		if self.numActive < self.maxPoolSize {
+		if (self.idlePool.Len() + self.workPool.Len()) < self.maxPoolSize {
 			//如果没有可用链接则创建一个
 			err, conn = self.dialFunc(self.id())
 			if nil != err {
 				conn = nil
-			} else {
-				self.numActive++
 			}
 		} else {
 			return errors.New("POOLFACTORY|POOL|FULL!"), nil
 		}
 	}
-
+	//放入到工作连接池中去
 	if nil != conn {
-		self.numWork++
+		self.workPool.PushBack(conn)
 	}
 
 	return err, conn
@@ -186,24 +181,20 @@ func (self *ConnPool) Get() (error, IConn) {
 //释放坏的资源
 func (self *ConnPool) ReleaseBroken(conn IConn) error {
 
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 	if nil != conn {
+		for e := self.workPool.Back(); nil != e; e = e.Prev() {
+			if e.Value == conn {
+				self.workPool.Remove(e)
+				break
+			}
+		}
 		conn.Close()
 		conn = nil
 	}
 
-	var err error
-	self.mutex.Lock()
-	defer self.mutex.Unlock()
-	//只有当前的存活链接和当前工作链接大于0的时候才会去销毁
-	if self.numWork > 0 && self.numActive > 0 {
-		self.numWork--
-		self.numActive--
-		log.Debug("POOL|ReleaseBroken|SUCC|%d/%d", self.numActive, self.numWork)
-
-	} else {
-		err = errors.New("POOL|RELEASE BROKEN|INVALID CONN")
-	}
-	return err
+	return nil
 }
 
 /**
@@ -211,25 +202,21 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 **/
 func (self *ConnPool) Release(conn IConn) error {
 
-	idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(self.idletime))}
-
-	self.mutex.Lock()
-	defer self.mutex.Unlock()
-
-	if self.numWork > 0 {
-		//放入ideal池子中
-		self.idlePool.PushFront(idleconn)
-		//工作链接数量--
-		self.numWork--
-		log.Debug("POOL|RELEASE|SUCC|%d/%d", self.numActive, self.numWork)
-		return nil
-	} else {
-		conn.Close()
-		conn = nil
-		log.Debug("POOL|RELEASE|FAIL|%d", self.numActive)
-		return errors.New("POOL|RELEASE|INVALID CONN")
+	if nil != conn && conn.IsAlive() {
+		idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(self.idletime))}
+		self.mutex.Lock()
+		defer self.mutex.Unlock()
+		for e := self.workPool.Back(); nil != e; e = e.Prev() {
+			if e.Value == conn {
+				//如果和当前的一样则从workpool中删除并放入到idle中
+				self.workPool.Remove(e)
+				self.idlePool.PushFront(idleconn)
+				break
+			}
+		}
 	}
 
+	return nil
 }
 
 //生成connectionId
@@ -245,11 +232,11 @@ func (self *ConnPool) Shutdown() {
 	for i := 0; i < 3; {
 		//等待五秒中结束
 		time.Sleep(5 * time.Second)
-		if self.numWork <= 0 {
+		if self.workPool.Len() <= 0 {
 			break
 		}
 
-		log.Info("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d", self.numWork)
+		log.Info("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d", self.workPool.Len())
 		i++
 	}
 
