@@ -57,9 +57,10 @@ func (self *ApnsConnection) Open() error {
 		if nil != err {
 			return err
 		}
+		self.alive = true
 		//启动读取数据
 		go self.waitRepsonse()
-		self.alive = true
+
 	case <-time.After(5 * time.Second):
 		return errors.New("open apnsconnection timeout!")
 	default:

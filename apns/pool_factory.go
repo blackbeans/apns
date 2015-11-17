@@ -57,7 +57,7 @@ func NewConnPool(minPoolSize, corepoolSize,
 		running:      true,
 		connectionId: 1}
 
-	err := pool.enhancedPool(pool.minPoolSize)
+	err := pool.enhancedPool(pool.corepoolSize)
 	if nil != err {
 		return err, nil
 	}
@@ -116,11 +116,13 @@ func (self *ConnPool) evict() {
 					self.idlePool.Remove(e)
 					//并且该表当前的active数量
 					self.numActive--
+					log.Debug("POOL_FACTORY|evict|Expired|%d/%d/%d",
+						self.numWork, self.numActive, self.idlePool.Len())
 				}
 			}
 
-			//检查当前的连接数是否满足minPoolSize,不满足则创建
-			enhanceSize := self.minPoolSize - self.numActive
+			//检查当前的连接数是否满足corepoolSize,不满足则创建
+			enhanceSize := self.corepoolSize - self.numActive
 			if enhanceSize > 0 {
 				//创建这个数量的连接
 				self.enhancedPool(enhanceSize)
@@ -131,7 +133,7 @@ func (self *ConnPool) evict() {
 }
 
 func (self *ConnPool) MonitorPool() (int, int, int) {
-	return self.numWork, self.numActive, self.idlePool.Len()
+	return self.numWork, self.idlePool.Len(), self.numActive
 }
 
 func (self *ConnPool) Get() (error, IConn) {
@@ -154,6 +156,7 @@ func (self *ConnPool) Get() (error, IConn) {
 			//归还broken Conn
 			self.idlePool.Remove(e)
 			self.numActive--
+			conn = nil
 		}
 	}
 
@@ -195,7 +198,7 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 	if self.numWork > 0 && self.numActive > 0 {
 		self.numWork--
 		self.numActive--
-		log.Debug("POOL|ReleaseBroken|SUCC|%d/%d\n", self.numActive, self.numWork)
+		log.Debug("POOL|ReleaseBroken|SUCC|%d/%d", self.numActive, self.numWork)
 
 	} else {
 		err = errors.New("POOL|RELEASE BROKEN|INVALID CONN")
@@ -218,12 +221,12 @@ func (self *ConnPool) Release(conn IConn) error {
 		self.idlePool.PushFront(idleconn)
 		//工作链接数量--
 		self.numWork--
-		log.Debug("POOL|RELEASE|SUCC|%d/%d\n", self.numActive, self.numWork)
+		log.Debug("POOL|RELEASE|SUCC|%d/%d", self.numActive, self.numWork)
 		return nil
 	} else {
 		conn.Close()
 		conn = nil
-		log.Debug("POOL|RELEASE|FAIL|%d\n", self.numActive)
+		log.Debug("POOL|RELEASE|FAIL|%d", self.numActive)
 		return errors.New("POOL|RELEASE|INVALID CONN")
 	}
 
