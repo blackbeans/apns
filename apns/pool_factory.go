@@ -24,7 +24,6 @@ type ConnPool struct {
 	maxPoolSize  int           //最大尺子大小
 	minPoolSize  int           //最小连接池大小
 	corepoolSize int           //核心池子大小
-	numActive    int           //当前正在存活的client
 	idletime     time.Duration //空闲时间
 
 	workPool *list.List //当前正在工作的client
@@ -92,7 +91,6 @@ func (self *ConnPool) enhancedPool(size int) error {
 
 		idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(self.idletime))}
 		self.idlePool.PushFront(idleconn)
-		self.numActive++
 	}
 
 	return nil
@@ -120,7 +118,7 @@ func (self *ConnPool) evict() {
 			}
 
 			//检查当前的连接数是否满足corepoolSize,不满足则创建
-			enhanceSize := self.corepoolSize - self.numActive
+			enhanceSize := self.corepoolSize - (self.idlePool.Len() + self.workPool.Len())
 			if enhanceSize > 0 {
 				//创建这个数量的连接
 				self.enhancedPool(enhanceSize)
