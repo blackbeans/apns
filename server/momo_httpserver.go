@@ -1,7 +1,7 @@
 package server
 
 import (
-// "errors"
+	// "errors"
 	"errors"
 	"net"
 	"net/http"
@@ -33,10 +33,7 @@ func (self *MomoHttpServer) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
-
-	for i := 0; i < 200; i++ {
-		go self.Serve(stoppableListener{ln.(*net.TCPListener), self.stop})
-	}
+	go self.Serve(stoppableListener{ln.(*net.TCPListener), self.stop})
 	return nil
 }
 
@@ -62,7 +59,7 @@ func (sl stoppableListener) Accept() (c net.Conn, err error) {
 		case <-sl.stop:
 			return nil, errors.New("STOP LISTEN!")
 		default:
-		//If the channel is still open, continue as normal
+			//If the channel is still open, continue as normal
 		}
 		if nil == err {
 			tc.SetKeepAlive(true)

@@ -45,7 +45,7 @@
     <property name="daily">true</property> 
   </filter>
   <filter enabled="true">
-    <tag>gpsn_error</tag>
+    <tag>apns_error</tag>
     <type>file</type>
     <level>ERROR</level>
     <property name="filename">/home/logs/go-apns/apns_error.log</property>
@@ -61,6 +61,18 @@
     <type>file</type>
     <level>INFO</level>
     <property name="filename">/home/logs/go-apns/push_handler.log</property>
+    <property name="format">[%D %T] [%L] %M</property>
+    <property name="rotate">false</property>
+    <property name="maxsize">100M</property>
+    <property name="maxlines">10M</property>
+    <property name="daily">true</property> 
+  </filter>
+
+   <filter enabled="true">
+    <tag>apns_pool</tag>
+    <type>file</type>
+    <level>INFO</level>
+    <property name="filename">/home/logs/go-apns/apns_pool.log</property>
     <property name="format">[%D %T] [%L] %M</property>
     <property name="rotate">false</property>
     <property name="maxsize">100M</property>

@@ -8,7 +8,7 @@ import (
 //通用的存储发送message的接口
 type IMessageStorage interface {
 	//删除接口带过滤条件
-	Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(id uint32, msg *Message) bool)
+	Remove(startId uint32, endId uint32, filter func(id uint32, msg *Message) bool) (*Message, bool)
 	Insert(id uint32, msg *Message)
 	Get(id uint32) *Message //获取某个消息
 	Length() int            // 返回长度
@@ -156,7 +156,7 @@ func (self *CycleLink) innerRemove(n *node) *node {
 * 如果starId没有出现在则从头结点开始删除
 * 带有skip过滤器形式的删除
 **/
-func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan<- *Message, filter func(id uint32, msg *Message) bool) {
+func (self *CycleLink) Remove(startId uint32, endId uint32, filter func(id uint32, msg *Message) bool) (*Message, bool) {
 
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
@@ -170,8 +170,7 @@ func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan<- *Message, 
 		ok_e = true
 	} else if !ok_e {
 		//如果不存在这样end 则直接返回
-		ch <- nil
-		return
+		return nil, false
 	}
 
 	//如果起始坐标不存在则使用头节点
@@ -192,12 +191,12 @@ func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan<- *Message, 
 		if nil != filter && filter(n.id, n.msg) {
 			n = n.next
 		} else {
+			//对消息的ttl--
 			n.msg.ttl--
-			//写入channel 让另一侧重发
-			ch <- n.msg
 			n = self.innerRemove(n)
+			//写入channel 让另一侧重发
+			return n.msg, true
 		}
 	}
-
-	ch <- nil
+	return nil, false
 }

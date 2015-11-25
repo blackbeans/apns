@@ -240,7 +240,7 @@ func (self *ConnPool) Shutdown() {
 			break
 		}
 
-		log.Info("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d", self.workPool.Len())
+		log.InfoLog("apns_pool", "CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d", self.workPool.Len())
 		i++
 	}
 
@@ -253,5 +253,5 @@ func (self *ConnPool) Shutdown() {
 		idleconn = nil
 	}
 
-	log.Info("CONNECTION_POOL|SHUTDOWN")
+	log.InfoLog("apns_pool", "CONNECTION_POOL|SHUTDOWN")
 }
