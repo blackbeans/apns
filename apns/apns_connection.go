@@ -31,11 +31,13 @@ type ApnsConnection struct {
 	connectionId int32 //当前连接的标识
 }
 
-func NewApnsConnection(responseChan chan<- *entry.Response, certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
+func NewApnsConnection(responseChan chan<- *entry.Response,
+	certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
 
 	conn := &ApnsConnection{cert: certificates,
 		hostport:     hostport,
 		deadline:     deadline,
+		responseChan: responseChan,
 		connectionId: connectionId}
 	return conn.Open(), conn
 }
