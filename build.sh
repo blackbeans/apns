@@ -15,3 +15,5 @@ PROJ=`pwd | awk -F'/' '{print $(NF)}'`
 #VERSION=$1
 #go build  -o ./$PROJ-$VERSION $PROJ.go
 go build  -o ./$PROJ $PROJ.go
+
+tar -zcvf go-apns.tar.gz $PROJ log.xml

@@ -34,7 +34,8 @@ type ApnsConnection struct {
 func NewApnsConnection(responseChan chan<- *entry.Response,
 	certificates tls.Certificate, hostport string, deadline time.Duration, connectionId int32) (error, *ApnsConnection) {
 
-	conn := &ApnsConnection{cert: certificates,
+	conn := &ApnsConnection{
+		cert:         certificates,
 		hostport:     hostport,
 		deadline:     deadline,
 		responseChan: responseChan,
