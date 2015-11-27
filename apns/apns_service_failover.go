@@ -59,6 +59,7 @@ func (self *ApnsClient) resend(ch chan *entry.Message) {
 		case msg := <-ch:
 			//发送之......
 			self.sendMessage(msg)
+			self.resendCounter.Incr(1)
 			log.DebugLog("apns_debug", "APNSCLIENT|RESEND|%s\n", msg)
 		}
 	}

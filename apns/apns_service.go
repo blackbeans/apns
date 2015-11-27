@@ -19,6 +19,7 @@ type ApnsClient struct {
 	storage         entry.IMessageStorage
 	sendCounter     *entry.Counter
 	failCounter     *entry.Counter
+	resendCounter   *entry.Counter
 }
 
 func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
@@ -60,15 +61,14 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 	storage entry.IMessageStorage, responseChannel chan *entry.Response) *ApnsClient {
 
 	client := &ApnsClient{factory: factory, feedbackFactory: feedbackFactory,
-		running: true, maxttl: 3, storage: storage, sendCounter: &entry.Counter{}, failCounter: &entry.Counter{}}
+		running: true, maxttl: 3, storage: storage, sendCounter: &entry.Counter{}, failCounter: &entry.Counter{}, resendCounter: &entry.Counter{}}
 	go func() {
 		for client.running {
 			aa, ac, am := factory.MonitorPool()
 			fa, fc, fm := feedbackFactory.MonitorPool()
 			storageCap := client.storage.Length()
-
-			log.Info("APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tstorageLen:%d\tdeliver/fail:%d/%d", aa, ac, am, fa, fc, fm, storageCap,
-				client.sendCounter.Changes(), client.failCounter.Changes())
+			log.InfoLog("push_handler", "APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tdeliver/fail:%d/%d\tstorageLen:%d\tresend:%d", aa, ac, am, fa, fc, fm, storageCap,
+				client.sendCounter.Changes(), client.failCounter.Changes(), client.resendCounter.Changes())
 			time.Sleep(1 * time.Second)
 		}
 	}()
