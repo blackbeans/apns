@@ -41,10 +41,12 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 		case entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
 			//将错误的token记录在存储中，备后续的过滤使用
 			msg := self.storage.Get(resp.Identifier)
-			//从msg中拿出token用于记录
-			token := entry.UmarshalToken(msg)
-			self.storeInvalidToken(token)
-			log.DebugLog("apns_debug", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
+			if nil != msg {
+				//从msg中拿出token用于记录
+				token := entry.UmarshalToken(msg)
+				self.storeInvalidToken(token)
+				log.DebugLog("apns_debug", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
+			}
 		}
 
 	}

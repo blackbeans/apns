@@ -48,8 +48,12 @@ func NewCycleLink(maxttl uint8, maxCapacity int) *CycleLink {
 }
 
 func (self *CycleLink) Get(id uint32) *Message {
-	val, _ := self.hash[id]
-	return val.msg
+	val, ok := self.hash[id]
+	if ok {
+		return val.msg
+	} else {
+		return nil
+	}
 }
 
 func (self *CycleLink) Length() int {
