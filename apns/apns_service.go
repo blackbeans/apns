@@ -67,8 +67,9 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 			aa, ac, am := factory.MonitorPool()
 			fa, fc, fm := feedbackFactory.MonitorPool()
 			storageCap := client.storage.Length()
-			log.InfoLog("push_handler", "APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tdeliver/fail:%d/%d\tstorageLen:%d\tresend:%d", aa, ac, am, fa, fc, fm, storageCap,
-				client.sendCounter.Changes(), client.failCounter.Changes(), client.resendCounter.Changes())
+			log.InfoLog("push_handler", "APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tdeliver/fail:%d/%d\tstorageLen:%d\tresend:%d",
+				aa, ac, am, fa, fc, fm,
+				client.sendCounter.Changes(), client.failCounter.Changes(), storageCap, client.resendCounter.Changes())
 			time.Sleep(1 * time.Second)
 		}
 	}()
