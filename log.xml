@@ -12,10 +12,35 @@
     <level>INFO</level>
   </filter>
   <filter enabled="true">
-    <tag>apns_info</tag>
+    <tag>apns_debug</tag>
     <type>file</type>
+    <property name="filename">/home/logs/bibi/go-apns/apns_debug.log</property>
+    <property name="format">[%D %T] [%L] (%S) %M</property>
+    <property name="rotate">false</property>
+    <property name="maxsize">100M</property>
+    <property name="maxlines">10M</property>
+    <property name="daily">true</property> 
+    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
     <level>INFO</level>
-    <property name="filename">/home/logs/bibi/go-apns/apns_info.log</property>
+  </filter>
+    <filter enabled="true">
+    <tag>apns_debug</tag>
+    <type>file</type>
+    <property name="filename">/home/logs/bibi/go-apns/apns_debug.log</property>
+    <property name="format">[%D %T] [%L] (%S) %M</property>
+    <property name="rotate">false</property>
+    <property name="maxsize">100M</property>
+    <property name="maxlines">10M</property>
+    <property name="daily">true</property> 
+    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
+    <level>INFO</level>
+  </filter>
+
+  <filter enabled="true">
+    <tag>stderr</tag>
+    <type>file</type>
+    <level>ERROR</level>
+    <property name="filename">/home/logs/bibi/go-apns/stderr.log</property>
     <!--
        %T - Time (15:04:05 MST)
        %t - Time (15:04)
