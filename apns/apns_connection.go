@@ -49,7 +49,7 @@ func (self *ApnsConnection) Open() error {
 		ch <- self.dial()
 	}()
 
-	//创建打开连接5s超时
+	//创建打开连接60s超时
 	select {
 	case err := <-ch:
 		if nil != err {
@@ -59,7 +59,7 @@ func (self *ApnsConnection) Open() error {
 		//启动读取数据
 		go self.waitRepsonse()
 
-	case <-time.After(5 * time.Second):
+	case <-time.After(60 * time.Second):
 		return errors.New("open apnsconnection timeout!")
 	}
 	return nil
@@ -71,7 +71,7 @@ func (self *ApnsConnection) waitRepsonse() {
 	//同步读取当前conn的结果
 	length, err := self.conn.Read(buff[:entry.ERROR_RESPONSE])
 	if nil != err || length != len(buff) {
-		log.Info("CONNECTION|%s|READ RESPONSE|FAIL|%s", self.name(), err)
+		log.Info("CONNECTION|%s|READ RESPONSE|FAIL|%s|%s", self.name(), err, buff)
 	} else {
 		response := &entry.Response{}
 		response.Unmarshal(buff)
