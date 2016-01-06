@@ -32,7 +32,7 @@ func NewApnsHttpServer(option Option) *ApnsHttpServer {
 		//初始化apns
 		apnsClient = apns.NewDefaultApnsClient(option.cert,
 			option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
-		log.Info("ONLINE APNS HTTPSERVER IS STARTING ....")
+		log.InfoLog("push_handler", "ONLINE APNS HTTPSERVER IS STARTING ....")
 	}
 
 	server := &ApnsHttpServer{feedbackChan: feedbackChan,
@@ -48,15 +48,15 @@ func NewApnsHttpServer(option Option) *ApnsHttpServer {
 
 func (self *ApnsHttpServer) dial(hp string) {
 
-	log.Info("APNS HTTPSERVER IS STARTING ....")
+	log.InfoLog("push_handler", "APNS HTTPSERVER IS STARTING ....")
 	http.HandleFunc("/apns/push", self.handlePush)
 	http.HandleFunc("/apns/feedback", self.handleFeedBack)
 
 	err := self.httpserver.ListenAndServe()
 	if nil != err {
-		log.Error("APNSHTTPSERVER|LISTEN|FAIL|%s", err)
+		log.ErrorLog("push_handler", "APNSHTTPSERVER|LISTEN|FAIL|%s", err)
 	} else {
-		log.Info("APNSHTTPSERVER|LISTEN|SUCC|%s .....", hp)
+		log.InfoLog("push_handler", "APNSHTTPSERVER|LISTEN|SUCC|%s .....", hp)
 	}
 
 }
@@ -64,7 +64,7 @@ func (self *ApnsHttpServer) dial(hp string) {
 func (self *ApnsHttpServer) Shutdown() {
 	self.httpserver.Shutdonw()
 	self.apnsClient.Destory()
-	log.Info("APNS HTTP SERVER SHUTDOWN SUCC ....")
+	log.InfoLog("push_handler", "APNS HTTP SERVER SHUTDOWN SUCC ....")
 
 }
 

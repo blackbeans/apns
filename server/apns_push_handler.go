@@ -97,11 +97,11 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 	if RESP_STATUS_SUCC == resp.Status {
 		err = sendFunc()
 		if nil == err {
-			log.Info("APNS_HTTP_SERVER|SendNotification|SUCC|FORMAT:%s|%s", pushType, *payload)
+			log.InfoLog("push_handler", "APNS_HTTP_SERVER|SendNotification|SUCC|FORMAT:%s|%s", pushType, *payload)
 		}
 	}
 	if nil != err {
-		log.ErrorLog("go-apns", "APNS_HTTP_SERVER|SendNotification|FORMAT:%s|FAIL|IGNORED|%s|%s", pushType, *payload, err)
+		log.ErrorLog("push_handler", "APNS_HTTP_SERVER|SendNotification|FORMAT:%s|FAIL|IGNORED|%s|%s", pushType, *payload, err)
 		resp.Status = RESP_STATUS_SEND_OVER_TRY_ERROR
 		resp.Error = err
 	}
