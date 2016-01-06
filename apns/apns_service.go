@@ -36,7 +36,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 	})
 
 	if nil != err {
-		log.Critical("APN SERVICE|CREATE CONNECTION POOL|FAIL|%s", err)
+		log.CriticalLog("push_client", "APN SERVICE|CREATE CONNECTION POOL|FAIL|%s", err)
 		return nil
 	}
 	err, feedbackFactory := NewConnPool(1, 2, 5, 10*time.Minute, func(id int32) (error, IConn) {
@@ -44,7 +44,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 		return err, conn
 	})
 	if nil != err {
-		log.Critical("APN SERVICE|CREATE FEEDBACK CONNECTION POOL|FAIL|%s", err)
+		log.CriticalLog("push_client", "APN SERVICE|CREATE FEEDBACK CONNECTION POOL|FAIL|%s", err)
 		return nil
 	}
 
@@ -67,7 +67,7 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 			aa, ac, am := factory.MonitorPool()
 			fa, fc, fm := feedbackFactory.MonitorPool()
 			storageCap := client.storage.Length()
-			log.InfoLog("push_handler", "APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tdeliver/fail:%d/%d\tstorageLen:%d\tresend:%d",
+			log.InfoLog("apns_pool", "APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tdeliver/fail:%d/%d\tstorageLen:%d\tresend:%d",
 				aa, ac, am, fa, fc, fm,
 				client.sendCounter.Changes(), client.failCounter.Changes(), storageCap, client.resendCounter.Changes())
 			time.Sleep(1 * time.Second)
@@ -108,9 +108,9 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	for i := 0; i < 3; i++ {
 
 		err, conn := self.factory.Get()
-		if nil != err || nil == conn {
-			log.Error("APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s", err, *msg)
-			sendError = err
+		if nil != err || nil == conn || !conn.IsAlive() {
+			log.ErrorLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s", err, *msg)
+			sendError = errors.New("GET APNS CONNECTION FAIL")
 			continue
 		}
 
@@ -133,7 +133,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 			self.failCounter.Incr(1)
 			//连接有问题直接销毁
 			releaseErr := self.factory.ReleaseBroken(conn)
-			log.Debug("APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s", releaseErr)
+			log.InfoLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s", releaseErr)
 
 		} else {
 			//发送成功归还连接
@@ -155,7 +155,7 @@ func (self *ApnsClient) FetchFeedback(limit int) error {
 		err := self.feedbackFactory.Release(conn)
 		if nil != err {
 			//这里如果有错误就是BUG，归还连接失败，就是说明有游离态的连接
-			log.Error("APNSCLIENT|RELEASE CONN|FAIL")
+			log.ErrorLog("push_client", "APNSCLIENT|RELEASE CONN|FAIL")
 		}
 	}()
 	go func() {

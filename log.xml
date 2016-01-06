@@ -12,19 +12,7 @@
     <level>INFO</level>
   </filter>
   <filter enabled="true">
-    <tag>apns_debug</tag>
-    <type>file</type>
-    <property name="filename">/home/logs/bibi/go-apns/apns_debug.log</property>
-    <property name="format">[%D %T] [%L] (%S) %M</property>
-    <property name="rotate">false</property>
-    <property name="maxsize">100M</property>
-    <property name="maxlines">10M</property>
-    <property name="daily">true</property> 
-    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
-    <level>INFO</level>
-  </filter>
-    <filter enabled="true">
-    <tag>apns_debug</tag>
+    <tag>debug</tag>
     <type>file</type>
     <property name="filename">/home/logs/bibi/go-apns/apns_debug.log</property>
     <property name="format">[%D %T] [%L] (%S) %M</property>
@@ -59,7 +47,7 @@
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
   </filter>
   <filter enabled="true">
-    <tag>apns_warn</tag>
+    <tag>warn</tag>
     <type>file</type>
     <level>WARNING</level>
     <property name="filename">/home/logs/bibi/go-apns/apns_warn.log</property>
@@ -70,7 +58,7 @@
     <property name="daily">true</property> 
   </filter>
   <filter enabled="true">
-    <tag>apns_error</tag>
+    <tag>error</tag>
     <type>file</type>
     <level>ERROR</level>
     <property name="filename">/home/logs/bibi/go-apns/apns_error.log</property>
@@ -86,6 +74,18 @@
     <type>file</type>
     <level>INFO</level>
     <property name="filename">/home/logs/bibi/go-apns/push_handler.log</property>
+    <property name="format">[%D %T] [%L] %M</property>
+    <property name="rotate">false</property>
+    <property name="maxsize">100M</property>
+    <property name="maxlines">10M</property>
+    <property name="daily">true</property> 
+  </filter>
+
+  <filter enabled="true">
+    <tag>push_client</tag>
+    <type>file</type>
+    <level>INFO</level>
+    <property name="filename">/home/logs/bibi/go-apns/push_client.log</property>
     <property name="format">[%D %T] [%L] %M</property>
     <property name="rotate">false</property>
     <property name="maxsize">100M</property>

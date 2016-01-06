@@ -119,7 +119,7 @@ func (self *ConnPool) checkIdle() {
 			idleconn.conn.Close()
 			idleconn = nil
 			self.idlePool.Remove(e)
-			log.Debug("POOL_FACTORY|evict|Expired|%d/%d/%d",
+			log.DebugLog("apns_pool", "POOL_FACTORY|evict|Expired|%d/%d/%d",
 				self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len()))
 		}
 	}

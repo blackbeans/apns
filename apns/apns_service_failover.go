@@ -37,7 +37,7 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 			if succ && nil != msg {
 				ch <- msg
 			}
-			log.DebugLog("apns_debug", "APNSCLIENT|onErrorResponseRecieve|ERROR|%s|%d", msg, resp.Status)
+			log.InfoLog("push_client", "APNSCLIENT|onErrorResponseRecieve|ERROR|%s|%d", msg, resp.Status)
 
 		case entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
 			//将错误的token记录在存储中，备后续的过滤使用
@@ -46,7 +46,7 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 				//从msg中拿出token用于记录
 				token := entry.UmarshalToken(msg)
 				self.storeInvalidToken(token)
-				log.DebugLog("apns_debug", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
+				log.InfoLog("push_client", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
 			}
 		}
 
@@ -63,7 +63,7 @@ func (self *ApnsClient) resend(ch chan *entry.Message) {
 			//发送之......
 			self.sendMessage(msg)
 			self.resendCounter.Incr(1)
-			log.DebugLog("apns_debug", "APNSCLIENT|RESEND|%s\n", msg)
+			log.DebugLog("push_client", "APNSCLIENT|RESEND|%s\n", msg)
 		}
 	}
 
@@ -71,5 +71,5 @@ func (self *ApnsClient) resend(ch chan *entry.Message) {
 
 func (self *ApnsClient) storeInvalidToken(token string) {
 	//这里是里面最后存储不合法的token
-	log.Warn("APNSCLIENT|UnImplement StoreInvalidToken|%s\n", token)
+	log.WarnLog("push_client", "APNSCLIENT|UnImplement StoreInvalidToken|%s\n", token)
 }
