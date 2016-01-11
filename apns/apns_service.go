@@ -3,6 +3,7 @@ package apns
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
 	_ "math/rand"
@@ -83,7 +84,15 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 //发送简单的notification
 func (self *ApnsClient) SendSimpleNotification(deviceToken string, payload entry.PayLoad) error {
 	message := entry.NewMessage(entry.CMD_SIMPLE_NOTIFY, self.maxttl, entry.MESSAGE_TYPE_SIMPLE)
-	message.AddItem(entry.WrapDeviceToken(deviceToken), entry.WrapPayLoad(&payload))
+	token, err := entry.WrapDeviceToken(deviceToken)
+	if nil != err {
+		return err
+	}
+	pl, err := entry.WrapPayLoad(&payload)
+	if nil != err {
+		return err
+	}
+	message.AddItem(token, pl)
 	//直接发送的没有返回值
 	return self.sendMessage(message)
 }
@@ -92,12 +101,16 @@ func (self *ApnsClient) SendSimpleNotification(deviceToken string, payload entry
 func (self *ApnsClient) SendEnhancedNotification(identifier, expiriedTime uint32, deviceToken string, pl entry.PayLoad) error {
 	id := entry.WrapNotifyIdentifier(identifier)
 	message := entry.NewMessage(entry.CMD_ENHANCE_NOTIFY, self.maxttl, entry.MESSAGE_TYPE_ENHANCED)
-	payload := entry.WrapPayLoad(&pl)
-	if nil == payload {
-		return errors.New("SendEnhancedNotification|PAYLOAD|ENCODE|FAIL")
+	payload, err := entry.WrapPayLoad(&pl)
+	if nil == payload || nil != err {
+		return errors.New(fmt.Sprintf("SendEnhancedNotification|PAYLOAD|ENCODE|FAIL|%s", err))
 	}
-	message.AddItem(id, entry.WrapExpirationDate(expiriedTime),
-		entry.WrapDeviceToken(deviceToken), payload)
+
+	token, err := entry.WrapDeviceToken(deviceToken)
+	if nil != err {
+		return err
+	}
+	message.AddItem(id, entry.WrapExpirationDate(expiriedTime), token, payload)
 
 	return self.sendMessage(message)
 }

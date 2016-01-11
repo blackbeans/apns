@@ -3,6 +3,8 @@ package entry
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	log "github.com/blackbeans/log4go"
 )
 
@@ -63,22 +65,21 @@ func (self *PayLoad) Marshal() []byte {
 	return data
 }
 
-func WrapPayLoad(payload *PayLoad) *Item {
+func WrapPayLoad(payload *PayLoad) (*Item, error) {
 	payloadJson := payload.Marshal()
 	if nil == payloadJson || len(payloadJson) > 256 {
-		log.Error("WRAPPAYLOAD|FAIL|%s|len:%d\n", payloadJson, len(payloadJson))
-		return nil
+		return nil, errors.New(fmt.Sprintf("WRAPPAYLOAD|FAIL|%s|len:%d", payloadJson, len(payloadJson)))
 	}
-	return &Item{id: PAY_LOAD, length: uint16(len(payloadJson)), data: payloadJson}
+	return &Item{id: PAY_LOAD, length: uint16(len(payloadJson)), data: payloadJson}, nil
 }
 
-func WrapDeviceToken(token string) *Item {
+func WrapDeviceToken(token string) (*Item, error) {
 	decodeToken, err := hex.DecodeString(token)
 	if nil != err {
-		log.Error("WRAPTOKE|FAIL|INVALID TOKEN|%s|%s\n", token, err.Error())
-		return nil
+		return nil, errors.New(fmt.Sprintf("WRAPTOKE|FAIL|INVALID TOKEN|%s|%s", token, err.Error()))
+
 	}
-	return &Item{id: DEVICE_TOKEN, length: uint16(len(decodeToken)), data: decodeToken}
+	return &Item{id: DEVICE_TOKEN, length: uint16(len(decodeToken)), data: decodeToken}, nil
 }
 
 func WrapNotifyIdentifier(id uint32) *Item {

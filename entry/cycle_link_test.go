@@ -16,7 +16,7 @@ func BenchmarkInsert(t *testing.B) {
 	ch := make(chan *Message)
 
 	go func() {
-		link.Remove(0, 0, ch, func(msg *Message) bool {
+		link.Remove(0, 0, func(id uint32, msg *Message) bool {
 			return false
 		})
 	}()
@@ -48,7 +48,7 @@ func TestCycleLink(t *testing.T) {
 	fmt.Println("INSERT-----------")
 	PrintLink(t, link)
 
-	t.Logf("INSERT NODE |%d\n", link.length)
+	fmt.Printf("INSERT NODE |%d\n", link.length)
 	if link.length != 3 {
 		t.Fail()
 		t.Logf("INSERT NODE FAIL|%d\n", link.length)
@@ -61,25 +61,22 @@ func TestCycleLink(t *testing.T) {
 		return
 	}
 
-	ch := make(chan *Message)
+	ch := link.Remove(1, 2, func(id uint32, msg *Message) bool {
+		return false
+	})
 
-	go func() {
-		link.Remove(1, 2, ch, func(msg *Message) bool {
-			return false
-		})
-	}()
-
+	//删除的是2
 	for {
 		tmp := <-ch
-		t.Logf("GET REMOVE -------%t\n", tmp)
-		if nil == tmp {
+		fmt.Printf("Remove-----------%s\n", tmp)
+		if nil != tmp {
 			break
 		}
 	}
 
-	//剩下一个
+	//剩下3、4
 	if link.length != 2 && link.head.id != 3 {
-		t.Logf("REMOVE -----FIRST\t len:%d,head.id:%d----%t\n", link.length, link.head)
+		fmt.Printf("REMOVE -----FIRST\t len:%d,head.id:%d----%t\n", link.length, link.head)
 		t.Fail()
 		return
 	}
@@ -87,16 +84,13 @@ func TestCycleLink(t *testing.T) {
 	fmt.Println("CYCLE-FIRST-----------")
 	PrintLink(t, link)
 
-	go func() {
-		//删除最后一个
-		link.Remove(3, 0, ch, func(msg *Message) bool {
-			return false
-		})
-	}()
-
+	ch = link.Remove(3, 0, func(id uint32, msg *Message) bool {
+		return false
+	})
+	//全部删除了
 	for {
 		tmp := <-ch
-		t.Logf("GET REMOVE LEFT-------%t|%d\n", tmp, link.length)
+		fmt.Printf("GET REMOVE LEFT-------%t|%d\n", tmp, link.length)
 		if nil == tmp {
 			break
 		}
@@ -130,17 +124,14 @@ func TestCycleLink(t *testing.T) {
 		return
 	}
 
-	go func() {
-		//删除最后一个
-		link.Remove(3, 0, ch, func(msg *Message) bool {
-			return false
-		})
-	}()
+	ch = link.Remove(3, 0, func(id uint32, msg *Message) bool {
+		return false
+	})
 
 	for {
 		tmp := <-ch
 		t.Logf("GET REMOVE LEFT-------%t\n", tmp)
-		if nil == tmp {
+		if nil != tmp {
 			break
 		}
 	}
