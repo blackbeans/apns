@@ -131,14 +131,16 @@ func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Reques
 		if RESP_STATUS_SUCC == resp.Status {
 			defer func() {
 				if re := recover(); nil != re {
-					log.ErrorLog("push_handler", "ApnsHttpServer|handlePush|FAIL|%s|%s|%s", re, payload, trace)
+					log.ErrorLog("push_handler", "ApnsHttpServer|handlePush|SEND|FAIL|%s|%s|%s", re, payload, trace)
 					resp.Status = RESP_STATUS_ERROR
 					resp.Error = errors.New(fmt.Sprintf("%s", re))
 					self.write(out, resp)
 				}
 			}()
 			self.innerSend(pushType, token, payload, resp)
-			log.InfoLog("push_handler", "ApnsHttpServer|handlePush|SUCC|%s|%s", payload, trace)
+			log.InfoLog("push_handler", "ApnsHttpServer|handlePush|SUCC|%s|%s|%s", resp, payload, trace)
+		} else {
+			log.WarnLog("push_handler", "ApnsHttpServer|handlePush|FAIL|%s|%s|%s", resp, payload, trace)
 		}
 
 	}
