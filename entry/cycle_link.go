@@ -43,7 +43,7 @@ func NewCycleLink(maxttl uint8, maxCapacity int) *CycleLink {
 	link.hash = make(map[uint32]*node, maxCapacity/2)
 	link.maxttl = maxttl
 	link.head = nil
-
+	link.length = 0
 	return link
 }
 

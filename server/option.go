@@ -62,8 +62,8 @@ type Option struct {
 	cert            tls.Certificate
 	pushAddr        string
 	feedbackAddr    string
-	expiredTime     uint32
-	storageCapacity int //用于存储临时发送的数据量
+	expiredTime     uint32 //默认十分钟过期
+	storageCapacity int    //用于存储临时发送的数据量
 }
 
 func NewOption(startMode int, bindaddr string, certpath string, keypath string, runmode int, storageCapacity int) Option {
@@ -77,7 +77,8 @@ func NewOption(startMode int, bindaddr string, certpath string, keypath string, 
 	}
 	cert := loadCert(certpath, keypath)
 
-	return Option{startMode: startMode, bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr, storageCapacity: storageCapacity}
+	return Option{startMode: startMode, bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr,
+		expiredTime: 10 * 60, storageCapacity: storageCapacity}
 }
 func loadCert(certpath string, keypath string) tls.Certificate {
 

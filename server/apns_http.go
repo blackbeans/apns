@@ -1,9 +1,9 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	log "github.com/blackbeans/log4go"
+	"github.com/go-errors/errors"
 	"go-apns/apns"
 	"go-apns/entry"
 	"net/http"
@@ -129,22 +129,29 @@ func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Reques
 
 		//----------------如果依然是成功状态则证明当前可以发送
 		if RESP_STATUS_SUCC == resp.Status {
-			defer func() {
-				if re := recover(); nil != re {
-					log.ErrorLog("push_handler", "ApnsHttpServer|handlePush|SEND|FAIL|%s|%s|%s", re, payload, trace)
-					resp.Status = RESP_STATUS_ERROR
-					resp.Error = errors.New(fmt.Sprintf("%s", re))
-					self.write(out, resp)
-				}
+
+			func() {
+				defer func() {
+					if re := recover(); nil != re {
+						stack := re.(*errors.Error).ErrorStack()
+						log.ErrorLog("push_handler", "ApnsHttpServer|handlePush|SEND|FAIL|%s|%s|%s", stack, payload, trace)
+						resp.Status = RESP_STATUS_ERROR
+						resp.Error = errors.New(fmt.Sprintf("%s", re))
+						self.write(out, resp)
+					}
+				}()
+				self.innerSend(pushType, token, payload, resp)
+				self.write(out, resp)
+				log.InfoLog("push_handler", "ApnsHttpServer|handlePush|SUCC|%s|%s|%s", resp, payload, trace)
 			}()
-			self.innerSend(pushType, token, payload, resp)
-			log.InfoLog("push_handler", "ApnsHttpServer|handlePush|SUCC|%s|%s|%s", resp, payload, trace)
+
 		} else {
 			log.WarnLog("push_handler", "ApnsHttpServer|handlePush|FAIL|%s|%s|%s", resp, payload, trace)
+			self.write(out, resp)
 		}
 
 	}
-	self.write(out, resp)
+
 }
 
 func (self *ApnsHttpServer) write(out http.ResponseWriter, resp *response) {

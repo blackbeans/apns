@@ -110,7 +110,8 @@ func (self *ApnsClient) SendEnhancedNotification(identifier, expiriedTime uint32
 	if nil != err {
 		return err
 	}
-	message.AddItem(id, entry.WrapExpirationDate(expiriedTime), token, payload)
+	expiry := uint32(time.Now().Add(time.Duration(int64(expiriedTime) * int64(time.Second))).Unix())
+	message.AddItem(id, entry.WrapExpirationDate(expiry), token, payload)
 
 	return self.sendMessage(message)
 }

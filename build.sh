@@ -1,6 +1,7 @@
 #!/bin/bash
 
-go get -u github.com/blackbeans/log4go
+go get  github.com/blackbeans/log4go
+go get  github.com/go-errors/errors
 
 go build go-apns/entry
 go install go-apns/entry
