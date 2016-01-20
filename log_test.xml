@@ -23,7 +23,7 @@
        Recommended: "[%D %T] [%L] (%S) %M"
     -->
     <property name="format">[%D %T] [%L] %M</property>
-    <property name="rotate">false</property> <!-- true enables log rotation, otherwise append -->
+    <property name="rotate">true</property> <!-- true enables log rotation, otherwise append -->
     <property name="maxsize">100M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">10M</property> <!-- \d+[KMG]? Suffixes are in terms of thousands -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
@@ -45,7 +45,7 @@
        Recommended: "[%D %T] [%L] (%S) %M"
     -->
     <property name="format">[%D %T] [%L] %M</property>
-    <property name="rotate">false</property> <!-- true enables log rotation, otherwise append -->
+    <property name="rotate">true</property> <!-- true enables log rotation, otherwise append -->
     <property name="maxsize">100M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">10M</property> <!-- \d+[KMG]? Suffixes are in terms of thousands -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
@@ -56,7 +56,7 @@
     <level>WARNING</level>
     <property name="filename">./logs/go-apns/apns_warn.log</property>
     <property name="format">[%D %T] [%L] %M</property>
-    <property name="rotate">false</property>
+    <property name="rotate">true</property>
     <property name="maxsize">100M</property>
     <property name="maxlines">10M</property>
     <property name="daily">true</property> 
@@ -67,7 +67,7 @@
     <level>ERROR</level>
     <property name="filename">./logs/go-apns/apns_error.log</property>
     <property name="format">[%D %T] [%L] (%S) %M</property>
-    <property name="rotate">false</property>
+    <property name="rotate">true</property>
     <property name="maxsize">100M</property>
     <property name="maxlines">10M</property>
     <property name="daily">true</property> 
@@ -79,7 +79,7 @@
     <level>INFO</level>
     <property name="filename">./logs/go-apns/push_handler.log</property>
     <property name="format">[%D %T] [%L] %M</property>
-    <property name="rotate">false</property>
+    <property name="rotate">true</property>
     <property name="maxsize">100M</property>
     <property name="maxlines">10M</property>
     <property name="daily">true</property> 
@@ -91,7 +91,7 @@
     <level>INFO</level>
     <property name="filename">./logs/go-apns/apns_pool.log</property>
     <property name="format">[%D %T] [%L] %M</property>
-    <property name="rotate">false</property>
+    <property name="rotate">true</property>
     <property name="maxsize">100M</property>
     <property name="maxlines">10M</property>
     <property name="daily">true</property> 

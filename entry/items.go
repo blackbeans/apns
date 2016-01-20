@@ -33,6 +33,10 @@ func NewSimplePayLoad(sound string, badge int, body string) *PayLoad {
 	return &PayLoad{aps: aps, extParams: make(map[string]interface{})}
 }
 
+func NewSimplePayLoadWithAps(aps Aps) *PayLoad {
+	return &PayLoad{aps: aps, extParams: make(map[string]interface{})}
+}
+
 func NewPayLoad(sound string, badge int, alert Alert) *PayLoad {
 	data, err := json.Marshal(alert)
 	if nil != err {

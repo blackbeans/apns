@@ -26,10 +26,18 @@ func (self *ApnsHttpServer) decodePayload(req *http.Request, resp *response) (st
 	body := req.PostFormValue("body")
 
 	//-----------检查参数
-	valid := checkArguments(tokenV, sound, badgeV, body)
+
+	noToken := checkArguments(tokenV)
+	if !noToken {
+		resp.Status = RESP_STATUS_PUSH_ARGUMENTS_INVALID
+		resp.Error = errors.New("Notification Params are Invalid!|NO TOKEN!")
+		return "", nil
+	}
+
+	valid := checkArgumentsNotNil(sound, badgeV, body)
 	if !valid {
 		resp.Status = RESP_STATUS_PUSH_ARGUMENTS_INVALID
-		resp.Error = errors.New("Notification Params are Invalid!")
+		resp.Error = errors.New("Notification Params are Invalid!| PayLoad Lack!")
 		return "", nil
 	}
 
@@ -39,9 +47,22 @@ func (self *ApnsHttpServer) decodePayload(req *http.Request, resp *response) (st
 		token += v
 	}
 
-	badge, _ := strconv.ParseInt(badgeV, 10, 32)
+	aps := entry.Aps{}
+	if len(sound) > 0 {
+		aps.Sound = sound
+	}
+
+	if len(badgeV) > 0 {
+		badge, _ := strconv.ParseInt(badgeV, 10, 32)
+		aps.Badge = int(badge)
+	}
+
+	if len(body) > 0 {
+		aps.Alert = body
+	}
+
 	//拼接payload
-	payload := entry.NewSimplePayLoad(sound, int(badge), body)
+	payload := entry.NewSimplePayLoadWithAps(aps)
 
 	//是个大的Json数据即可
 	extArgs := req.PostFormValue("extArgs")
@@ -115,6 +136,15 @@ func checkArguments(args ...string) bool {
 	}
 
 	return true
+}
+
+func checkArgumentsNotNil(args ...string) bool {
+	for _, v := range args {
+		if len(v) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (self *ApnsHttpServer) identifierId() uint32 {
