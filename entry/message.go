@@ -3,6 +3,7 @@ package entry
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	log "github.com/blackbeans/log4go"
 	"reflect"
 )
@@ -92,7 +93,8 @@ func UmarshalToken(msg *Message) string {
 	if msg.MsgType == MESSAGE_TYPE_ENHANCED {
 		//enchanced 的token位于第三个item
 		tokenItem := msg.items[2]
-		return tokenItem.data.(string)
+		token := tokenItem.data.([]uint8)
+		return hex.EncodeToString(token)
 
 	} else if msg.MsgType == MESSAGE_TYPE_SIMPLE {
 		//simple类型的token位于第一个item

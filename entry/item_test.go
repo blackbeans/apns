@@ -55,3 +55,12 @@ func Test_ResponseMarshal(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestWrapToken(t *testing.T) {
+	token, _ := hex.DecodeString(sample)
+	tokenStr := hex.EncodeToString(token)
+	t.Logf("token=%s", tokenStr)
+	if sample != tokenStr {
+		t.Fail()
+	}
+}
