@@ -127,6 +127,15 @@ func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Reques
 
 		trace := req.PostFormValue("trace")
 
+		expiredSeconds := req.PostFormValue("expiredSeconds")
+		expiredTime := self.expiredTime
+		if len(expiredSeconds) > 0 {
+			t, err := strconv.ParseInt(expiredSeconds, 10, 32)
+			if nil == err {
+				expiredTime = uint32(t)
+			}
+		}
+
 		//----------------如果依然是成功状态则证明当前可以发送
 		if RESP_STATUS_SUCC == resp.Status {
 
@@ -140,7 +149,7 @@ func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Reques
 						self.write(out, resp)
 					}
 				}()
-				self.innerSend(pushType, token, payload, resp)
+				self.innerSend(pushType, token, payload, resp, expiredTime)
 				self.write(out, resp)
 				log.InfoLog("push_handler", "ApnsHttpServer|handlePush|SUCC|%s|%s|%s", resp, payload, trace)
 			}()

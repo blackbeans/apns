@@ -78,7 +78,7 @@ func NewOption(startMode int, bindaddr string, certpath string, keypath string, 
 	cert := loadCert(certpath, keypath)
 
 	return Option{startMode: startMode, bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr,
-		expiredTime: 10 * 60, storageCapacity: storageCapacity}
+		expiredTime: 24 * 60 * 60, storageCapacity: storageCapacity}
 }
 func loadCert(certpath string, keypath string) tls.Certificate {
 

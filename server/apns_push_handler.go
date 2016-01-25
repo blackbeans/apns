@@ -90,8 +90,7 @@ func (self *ApnsHttpServer) decodePayload(req *http.Request, resp *response) (st
 }
 
 //内部发送代码
-func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *entry.PayLoad, resp *response) {
-
+func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *entry.PayLoad, resp *response, expiredTime uint32) {
 	var sendFunc func() error
 
 	if NOTIFY_SIMPLE_FORMAT == pushType {
@@ -104,7 +103,7 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 		id := self.identifierId()
 		sendFunc = func() error {
 			return self.apnsClient.SendEnhancedNotification(id,
-				self.expiredTime, token, *payload)
+				expiredTime, token, *payload)
 		}
 
 	} else {
