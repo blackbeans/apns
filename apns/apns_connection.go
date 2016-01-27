@@ -134,7 +134,7 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 		return err
 	}
 	length, sendErr := self.conn.Write(packet)
-	if nil == sendErr || length != len(packet) {
+	if nil != sendErr || length != len(packet) {
 		log.WarnLog("push_client", "CONNECTION|SEND MESSAGE|FAIL|%s", sendErr)
 	} else {
 		log.DebugLog("push_client", "CONNECTION|SEND MESSAGE|SUCC")
