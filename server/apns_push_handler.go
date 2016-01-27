@@ -117,7 +117,7 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 	if RESP_STATUS_SUCC == resp.Status {
 		err = sendFunc()
 		if nil == err {
-			log.InfoLog("push_handler", "ApnsHttpServer|SendNotification|SUCC|FORMAT:%s|%s", pushType, *payload)
+			log.DebugLog("push_handler", "ApnsHttpServer|SendNotification|SUCC|FORMAT:%s|%s", pushType, *payload)
 		}
 	}
 	if nil != err {
