@@ -147,7 +147,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 			self.failCounter.Incr(1)
 			//连接有问题直接销毁
 			releaseErr := self.factory.ReleaseBroken(conn)
-			log.InfoLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s", releaseErr)
+			log.ErrorLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|RELEASE BROKEN CONN|FAIL|%s|%s", sendError, releaseErr)
 
 		} else {
 			//发送成功归还连接

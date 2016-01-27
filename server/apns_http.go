@@ -151,7 +151,7 @@ func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Reques
 				}()
 				self.innerSend(pushType, token, payload, resp, expiredTime)
 				self.write(out, resp)
-				log.InfoLog("push_handler", "ApnsHttpServer|handlePush|SUCC|%s|%s|%s", resp, payload, trace)
+				log.DebugLog("push_handler", "ApnsHttpServer|handlePush|SUCC|%s|%s|%s", resp, payload, trace)
 			}()
 
 		} else {
