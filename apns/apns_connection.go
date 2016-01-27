@@ -5,6 +5,7 @@ import (
 	"errors"
 	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
+	"net"
 	"reflect"
 	"time"
 )
@@ -92,14 +93,18 @@ func (self *ApnsConnection) dial() error {
 	config := tls.Config{}
 	config.Certificates = []tls.Certificate{self.cert}
 	config.InsecureSkipVerify = true
-	conn, err := tls.Dial("tcp", self.hostport, &config)
+	//自定义dialer
+	dialer := new(net.Dialer)
+	dialer.KeepAlive = 10 * time.Minute
+	dialer.Timeout = 30 * time.Second
+
+	conn, err := tls.DialWithDialer(dialer, "tcp", self.hostport, &config)
 	if nil != err {
 		//connect fail
 		log.WarnLog("push_client", "CONNECTION|%s|DIAL CONNECT|FAIL|%s|%s", self.name(), self.hostport, err.Error())
 		return err
 	}
 
-	// conn.SetDeadline(0 * time.Second)
 	for {
 		state := conn.ConnectionState()
 		if state.HandshakeComplete {
@@ -113,6 +118,14 @@ func (self *ApnsConnection) dial() error {
 }
 
 func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
+	if !self.alive ||
+		!self.conn.ConnectionState().HandshakeComplete {
+		if self.alive {
+			//存活但是不适合握手完成状态则失败
+			self.Close()
+		}
+		return errors.New("CONNECTION|SEND MESSAGE|FAIL|Connection Closed!")
+	}
 	//将当前的msg强制设置为当前conn的id作为标识
 	msg.ProcessId = self.connectionId
 
@@ -120,16 +133,15 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 	if nil != err {
 		return err
 	}
-
 	length, sendErr := self.conn.Write(packet)
-	if nil != err || length != len(packet) {
+	if nil == sendErr || length != len(packet) {
 		log.WarnLog("push_client", "CONNECTION|SEND MESSAGE|FAIL|%s", err)
 	} else {
 		log.DebugLog("push_client", "CONNECTION|SEND MESSAGE|SUCC")
 
 	}
-
 	return sendErr
+
 }
 
 func (self *ApnsConnection) IsAlive() bool {
