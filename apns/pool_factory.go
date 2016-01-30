@@ -206,7 +206,7 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 **/
 func (self *ConnPool) Release(conn IConn) error {
 
-	if nil != conn && conn.IsAlive() {
+	if nil != conn {
 		idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(self.idletime))}
 		self.mutex.Lock()
 		defer self.mutex.Unlock()
@@ -214,7 +214,10 @@ func (self *ConnPool) Release(conn IConn) error {
 			if e.Value == conn {
 				//如果和当前的一样则从workpool中删除并放入到idle中
 				self.workPool.Remove(e)
-				self.idlePool.PushFront(idleconn)
+				//存活的才写入idle
+				if conn.IsAlive() {
+					self.idlePool.PushFront(idleconn)
+				}
 				break
 			}
 		}
