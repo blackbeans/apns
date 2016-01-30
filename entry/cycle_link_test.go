@@ -10,7 +10,7 @@ func BenchmarkInsert(t *testing.B) {
 	link := NewCycleLink(3, 10000)
 	for i := 0; i < t.N; i++ {
 		msg := NewMessage(1, 3, MESSAGE_TYPE_SIMPLE)
-		link.Insert(uint32(i), msg)
+		msg.IdentifierId = link.Insert(msg)
 	}
 
 	ch := make(chan *Message)
@@ -37,14 +37,14 @@ func BenchmarkInsert(t *testing.B) {
 
 func TestCycleLink(t *testing.T) {
 	link := NewCycleLink(3, 3)
-	msg1 := NewMessage(1, 3, MESSAGE_TYPE_SIMPLE)
-	link.Insert(1, msg1)
+	msg1 := NewMessage(2, 3, MESSAGE_TYPE_SIMPLE)
+	msg1.IdentifierId = link.Insert(msg1)
 	msg2 := NewMessage(2, 3, MESSAGE_TYPE_SIMPLE)
-	link.Insert(2, msg2)
-	msg3 := NewMessage(3, 3, MESSAGE_TYPE_SIMPLE)
-	link.Insert(3, msg3)
-	msg4 := NewMessage(4, 3, MESSAGE_TYPE_SIMPLE)
-	link.Insert(4, msg4)
+	msg2.IdentifierId = link.Insert(msg2)
+	msg3 := NewMessage(2, 3, MESSAGE_TYPE_SIMPLE)
+	msg3.IdentifierId = link.Insert(msg3)
+	msg4 := NewMessage(2, 3, MESSAGE_TYPE_SIMPLE)
+	msg4.IdentifierId = link.Insert(msg4)
 	fmt.Println("INSERT-----------")
 	PrintLink(t, link)
 
@@ -106,7 +106,7 @@ func TestCycleLink(t *testing.T) {
 	}
 
 	msg5 := NewMessage(5, 0, MESSAGE_TYPE_SIMPLE)
-	link.Insert(5, msg5)
+	msg5.IdentifierId = link.Insert(msg5)
 
 	//---------5的ttl为0 则应该不插入
 	if link.length != 0 {
@@ -117,7 +117,7 @@ func TestCycleLink(t *testing.T) {
 
 	//------插入5
 	msg5 = NewMessage(5, 3, MESSAGE_TYPE_SIMPLE)
-	link.Insert(5, msg5)
+	msg5.IdentifierId = link.Insert(msg5)
 
 	if link.length != 1 {
 		t.Fail()

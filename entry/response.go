@@ -38,15 +38,16 @@ func (self *Feedback) Unmarshal(data []byte) {
 
 //-----------------error respons
 type Response struct {
-	Cmd        uint8
-	Status     uint8
-	Identifier uint32
-	ProccessId int32
+	Cmd          uint8
+	Status       uint8
+	Identifier   uint32
+	ConnectionId int32
 }
 
-func (self *Response) Unmarshal(data []byte) {
+func (self *Response) Unmarshal(connectionId int32, data []byte) {
 	reader := bytes.NewReader(data)
 	binary.Read(reader, binary.BigEndian, &self.Cmd)
 	binary.Read(reader, binary.BigEndian, &self.Status)
 	binary.Read(reader, binary.BigEndian, &self.Identifier)
+	self.ConnectionId = connectionId
 }

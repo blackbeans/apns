@@ -3,15 +3,16 @@ package entry
 import (
 	_ "log"
 	"sync"
+	"sync/atomic"
 )
 
 //通用的存储发送message的接口
 type IMessageStorage interface {
 	//删除接口带过滤条件
 	Remove(startId uint32, endId uint32, filter func(id uint32, msg *Message) bool) chan *Message
-	Insert(id uint32, msg *Message)
-	Get(id uint32) *Message //获取某个消息
-	Length() int            // 返回长度
+	Insert(msg *Message) uint32 //返回写入的id
+	Get(id uint32) *Message     //获取某个消息
+	Length() int                // 返回长度
 }
 
 /**
@@ -29,6 +30,7 @@ type node struct {
 
 //循环链表
 type CycleLink struct {
+	pushId      uint32           //push的ID
 	head        *node            //循环链表
 	length      int              //当前节点联调的长度
 	hash        map[uint32]*node //记录了hash的节点，方便定位
@@ -44,6 +46,7 @@ func NewCycleLink(maxttl uint8, maxCapacity int) *CycleLink {
 	link.maxttl = maxttl
 	link.head = nil
 	link.length = 0
+	link.pushId = 0
 	return link
 }
 
@@ -60,7 +63,7 @@ func (self *CycleLink) Length() int {
 	return self.length
 }
 
-func (self *CycleLink) Insert(id uint32, msg *Message) {
+func (self *CycleLink) Insert(msg *Message) uint32 {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
@@ -69,13 +72,12 @@ func (self *CycleLink) Insert(id uint32, msg *Message) {
 		msg.ttl = self.maxttl
 	} else if msg.ttl <= 0 {
 		//如果ttl到达0则不进行存储抛弃
-		return
+		return 0
 	}
 
-	v, ok := self.hash[id]
+	v, ok := self.hash[msg.IdentifierId]
 	if !ok {
 
-		n := &node{id: id, msg: msg}
 		//这里判断一下是否达到了最大的容量，如果达到了就覆盖头节点的数据，否则就pushback
 		if self.length >= self.maxCapacity {
 			//删除当前头结点，返回新的头结点
@@ -84,22 +86,23 @@ func (self *CycleLink) Insert(id uint32, msg *Message) {
 			// log.Printf("CYCLE-LINK|OVERFLOW|%d|%t", self.length, self.head)
 		}
 
+		if msg.ttl <= 0 {
+			//如果当前的写入的node中的msg如果ttl为0 那么直接丢弃
+			return 0
+		}
 		//最后统一执行写入
-		self.innerInsert(self.head, n)
+		return self.innerInsert(self.head, msg).id
 
 	} else {
 		v.msg = msg
+		return msg.IdentifierId
 	}
 
 }
 
-func (self *CycleLink) innerInsert(h *node, n *node) {
-
-	if n.msg.ttl <= 0 {
-		//如果当前的写入的node中的msg如果ttl为0 那么直接丢弃
-		return
-	}
-
+func (self *CycleLink) innerInsert(h *node, msg *Message) *node {
+	//里面创建为了保持有序
+	n := &node{id: atomic.AddUint32(&self.pushId, 1), msg: msg}
 	//如果还么有初始化
 	if self.length <= 0 {
 		n.next = n
@@ -107,7 +110,6 @@ func (self *CycleLink) innerInsert(h *node, n *node) {
 		self.head = n
 
 	} else {
-
 		//直接将n的pre 指向tail,将next指向 tail.next
 		n.pre = self.head.pre
 		n.next = self.head
@@ -115,9 +117,9 @@ func (self *CycleLink) innerInsert(h *node, n *node) {
 		self.head.pre.next = n
 		self.head.pre = n
 	}
-
 	self.hash[n.id] = n
 	self.length++
+	return n
 }
 
 /**

@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
-	"sync/atomic"
 )
 
 var regx *regexp.Regexp
@@ -100,10 +99,8 @@ func (self *ApnsHttpServer) innerSend(pushType string, token string, payload *en
 		}
 	} else if NOTIFY_ENHANCED_FORMAT == pushType {
 		//如果为扩展的
-		id := self.identifierId()
 		sendFunc = func() error {
-			return self.apnsClient.SendEnhancedNotification(id,
-				expiredTime, token, *payload)
+			return self.apnsClient.SendEnhancedNotification(expiredTime, token, *payload)
 		}
 
 	} else {
@@ -144,8 +141,4 @@ func checkArgumentsNotNil(args ...string) bool {
 		}
 	}
 	return false
-}
-
-func (self *ApnsHttpServer) identifierId() uint32 {
-	return atomic.AddUint32(&self.pushId, 1)
 }

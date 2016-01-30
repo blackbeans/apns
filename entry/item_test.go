@@ -47,7 +47,7 @@ func Test_ResponseMarshal(t *testing.T) {
 	t.Logf("--------%t,len:%d", data, len(data))
 
 	resp := &Response{}
-	resp.Unmarshal(data)
+	resp.Unmarshal(1, data)
 
 	t.Logf("--------%d,%d,%d", resp.Cmd, resp.Status, resp.Identifier)
 

@@ -15,19 +15,21 @@ const (
 
 //用于发送的push的Message
 type Message struct {
-	op        byte
-	length    int32
-	items     []*Item
-	ttl       uint8 //重试的次数
-	MsgType   byte
-	ProcessId int32 //被处理的Id 是不可变的
+	op           byte
+	length       int32
+	items        []*Item
+	ttl          uint8 //重试的次数
+	MsgType      byte
+	IdentifierId uint32 //这条message的唯一标识，用于重发
+	ConnectionId int32
 }
 
 func NewMessage(op byte, ttl uint8, msgType byte) *Message {
 	msg := &Message{op: op, ttl: ttl}
 	msg.items = make([]*Item, 0, 2)
 	msg.MsgType = msgType
-
+	//默认是0，ID不可能是0 都是大于0
+	msg.IdentifierId = 0
 	return msg
 }
 
@@ -38,8 +40,14 @@ func (self *Message) AddItem(items ...*Item) {
 func (self *Message) Encode() (error, []byte) {
 
 	framebuff := new(bytes.Buffer)
+
+	//写入IdentifiyId
+	identifier := WrapNotifyIdentifier(self.IdentifierId)
+	sendItems := make([]*Item, 0, 2)
+	sendItems = append(sendItems, identifier)
+	sendItems = append(sendItems, self.items...)
 	//write item body
-	for _, v := range self.items {
+	for _, v := range sendItems {
 		//如果是采用tlv形式的字节编码则写入类型、长度
 		datat := reflect.TypeOf(v.data).Kind()
 		if datat != reflect.Uint8 && datat != reflect.Uint16 &&

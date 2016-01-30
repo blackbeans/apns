@@ -3,6 +3,7 @@ package apns
 import (
 	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
+	"math/rand"
 	"time"
 )
 
@@ -20,17 +21,16 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 		//只有 prcessing error 和 shutdown的两种id才会进行重发
 		switch resp.Status {
 
-		case entry.RESP_SHUTDOWN, entry.RESP_ERROR, entry.RESP_UNKNOW:
+		case entry.RESP_SHUTDOWN, entry.RESP_ERROR, entry.RESP_UNKNOW, entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
 
 			//只有这三种才重发
 			ch := self.storage.Remove(resp.Identifier, 0, func(id uint32, msg *entry.Message) bool {
 				expiredTime := int64(entry.UmarshalExpiredTime(msg))
 
 				//过滤掉 不是当前连接ID的消息 或者 当前相同ID的消息 或者 (有过期时间结果已经过期的消息)
-				return msg.ProcessId != resp.ProccessId ||
+				return msg.ConnectionId != resp.ConnectionId ||
 					id == resp.Identifier ||
 					(0 != expiredTime && (time.Now().Unix()-expiredTime >= 0))
-
 			})
 
 			for {
@@ -45,14 +45,17 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 			}
 			log.InfoLog("push_client", "APNSCLIENT|onErrorResponseRecieve|ERROR|%d", resp.Status)
 
-		case entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
-			//将错误的token记录在存储中，备后续的过滤使用
-			msg := self.storage.Get(resp.Identifier)
-			if nil != msg {
-				//从msg中拿出token用于记录
-				token := entry.UmarshalToken(msg)
-				self.storeInvalidToken(token)
-				log.InfoLog("push_client", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
+			//非法的token，那么就存储起来
+			switch resp.Status {
+			case entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
+				//将错误的token记录在存储中，备后续的过滤使用
+				msg := self.storage.Get(resp.Identifier)
+				if nil != msg {
+					//从msg中拿出token用于记录
+					token := entry.UmarshalToken(msg)
+					self.storeInvalidToken(token)
+					log.WarnLog("push_client", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
+				}
 			}
 		}
 
@@ -67,9 +70,12 @@ func (self *ApnsClient) resend(ch chan *entry.Message) {
 		case <-time.After(5 * time.Second):
 		case msg := <-ch:
 			//发送之......
+			msg.IdentifierId = 0
 			self.sendMessage(msg)
 			self.resendCounter.Incr(1)
-			log.DebugLog("push_client", "APNSCLIENT|RESEND|%s\n", msg)
+			if rand.Intn(100) == 0 {
+				log.InfoLog("push_client", "APNSCLIENT|RESEND|%s\n", msg)
+			}
 		}
 	}
 

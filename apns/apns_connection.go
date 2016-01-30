@@ -75,7 +75,7 @@ func (self *ApnsConnection) waitRepsonse() {
 		log.InfoLog("push_client", "CONNECTION|%s|READ RESPONSE|FAIL|%s|%d", self.conn.RemoteAddr().String(), err, buff)
 	} else {
 		response := &entry.Response{}
-		response.Unmarshal(buff)
+		response.Unmarshal(self.connectionId, buff)
 		self.responseChan <- response
 	}
 
@@ -126,13 +126,13 @@ func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
 		}
 		return errors.New("CONNECTION|SEND MESSAGE|FAIL|Connection Closed!")
 	}
-	//将当前的msg强制设置为当前conn的id作为标识
-	msg.ProcessId = self.connectionId
 
 	err, packet := msg.Encode()
 	if nil != err {
 		return err
 	}
+	//消息使用当前连接发送做记录
+	msg.ConnectionId = self.connectionId
 	length, sendErr := self.conn.Write(packet)
 	if nil != sendErr || length != len(packet) {
 		log.WarnLog("push_client", "CONNECTION|SEND MESSAGE|FAIL|%s", sendErr)

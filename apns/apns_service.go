@@ -98,8 +98,8 @@ func (self *ApnsClient) SendSimpleNotification(deviceToken string, payload entry
 }
 
 //发送rich型的notification内部会重试
-func (self *ApnsClient) SendEnhancedNotification(identifier, expiriedTime uint32, deviceToken string, pl entry.PayLoad) error {
-	id := entry.WrapNotifyIdentifier(identifier)
+func (self *ApnsClient) SendEnhancedNotification(expiriedTime uint32, deviceToken string, pl entry.PayLoad) error {
+
 	message := entry.NewMessage(entry.CMD_ENHANCE_NOTIFY, self.maxttl, entry.MESSAGE_TYPE_ENHANCED)
 	payload, err := entry.WrapPayLoad(&pl)
 	if nil == payload || nil != err {
@@ -111,7 +111,7 @@ func (self *ApnsClient) SendEnhancedNotification(identifier, expiriedTime uint32
 		return err
 	}
 	expiry := uint32(time.Now().Add(time.Duration(int64(expiriedTime) * int64(time.Second))).Unix())
-	message.AddItem(id, entry.WrapExpirationDate(expiry), token, payload)
+	message.AddItem(entry.WrapExpirationDate(expiry), token, payload)
 
 	return self.sendMessage(message)
 }
@@ -123,16 +123,24 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 
 		err, conn := self.factory.Get()
 		if nil != err || nil == conn || !conn.IsAlive() {
-			log.ErrorLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s", err, *msg)
+			_, json := msg.Encode()
+			log.ErrorLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s", err, string(json))
 			sendError = errors.New("GET APNS CONNECTION FAIL")
 			continue
 		}
 
 		//将当前enchanced发送的数据写入到storage中
-		if nil != self.storage &&
-			msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
-			//正常发送的记录即可
-			self.storage.Insert(entry.UmarshalIdentifier(msg), msg)
+		if msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
+			id := uint32(0)
+			if nil != self.storage {
+				//正常发送的记录即可
+				id = self.storage.Insert(msg)
+				if id <= 0 {
+					_, json := msg.Encode()
+					log.WarnLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|Store FAIL|ID Zero|Try Send|%s", string(json))
+				}
+			}
+			msg.IdentifierId = id
 			// if rand.Intn(100) == 0 {
 			// 	log.Printf("APNSCLIENT|sendMessage|RECORD MESSAGE|%s\n", msg)
 			// }
