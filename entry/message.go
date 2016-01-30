@@ -75,7 +75,7 @@ func (self *Message) Encode() (error, []byte) {
 func UmarshalExpiredTime(msg *Message) uint32 {
 	if msg.MsgType == MESSAGE_TYPE_ENHANCED {
 		//enchanced 的expiredTime位于第2个item
-		id := msg.items[1]
+		id := msg.items[0]
 		return id.data.(uint32)
 
 	}
@@ -86,9 +86,7 @@ func UmarshalExpiredTime(msg *Message) uint32 {
 //从message重UmarshalIdentifier
 func UmarshalIdentifier(msg *Message) uint32 {
 	if msg.MsgType == MESSAGE_TYPE_ENHANCED {
-		//enchanced 的token位于第三个item
-		id := msg.items[0]
-		return id.data.(uint32)
+		return msg.IdentifierId
 
 	}
 
@@ -99,8 +97,8 @@ func UmarshalIdentifier(msg *Message) uint32 {
 //从message重umarshaltoken
 func UmarshalToken(msg *Message) string {
 	if msg.MsgType == MESSAGE_TYPE_ENHANCED {
-		//enchanced 的token位于第三个item
-		tokenItem := msg.items[2]
+		//enchanced 的token位于第2个item
+		tokenItem := msg.items[1]
 		token := tokenItem.data.([]uint8)
 		return hex.EncodeToString(token)
 
