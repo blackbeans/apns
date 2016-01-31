@@ -112,14 +112,12 @@ func (self *ConnPool) checkIdle() {
 	defer self.mutex.Unlock()
 	for e := self.idlePool.Back(); nil != e; e = e.Prev() {
 		idleconn := e.Value.(*IdleConn)
-		//如果当前时间在过期时间之后或者活动的链接大于corepoolsize则关闭
 		isExpired := idleconn.expiredTime.Before(time.Now())
-		if isExpired ||
-			(self.idlePool.Len()+self.workPool.Len()) > self.corepoolSize {
+		if isExpired {
 			idleconn.conn.Close()
-			idleconn = nil
 			self.idlePool.Remove(e)
-			log.DebugLog("apns_pool", "POOL_FACTORY|evict|Expired|%d/%d/%d",
+			idleconn = nil
+			log.InfoLog("apns_pool", "POOL_FACTORY|evict|Expired|%d/%d/%d",
 				self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len()))
 		}
 	}

@@ -123,7 +123,7 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 
 		err, conn := self.factory.Get()
 		if nil != err || nil == conn || !conn.IsAlive() {
-			if nil != conn && !conn.IsAlive() {
+			if nil != conn {
 				self.factory.ReleaseBroken(conn)
 			}
 			_, json := msg.Encode()
