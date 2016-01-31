@@ -23,8 +23,8 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 
 		case entry.RESP_SHUTDOWN, entry.RESP_ERROR, entry.RESP_UNKNOW, entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
 
-			ch := make(chan *entry.Message, 100)
 			//只有这三种才重发
+			ch := make(chan *entry.Message, 100)
 			go self.storage.Remove(resp.Identifier, 0, ch, func(id uint32, msg *entry.Message) bool {
 				expiredTime := int64(entry.UmarshalExpiredTime(msg))
 
@@ -44,6 +44,7 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 					break
 				}
 			}
+
 			log.InfoLog("push_client", "APNSCLIENT|onErrorResponseRecieve|ERROR|%d", resp.Status)
 
 			//非法的token，那么就存储起来
