@@ -36,11 +36,11 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 
 			for {
 
-				tmp := <-ch
+				tmp, ok := <-ch
 				//如果删除成功并且消息不为空则重发
 				if nil != tmp {
 					resendCh <- tmp
-				} else {
+				} else if !ok {
 					break
 				}
 			}
