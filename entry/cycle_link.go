@@ -1,6 +1,7 @@
 package entry
 
 import (
+	_ "fmt"
 	_ "log"
 	"sync"
 	"sync/atomic"
@@ -9,7 +10,7 @@ import (
 //通用的存储发送message的接口
 type IMessageStorage interface {
 	//删除接口带过滤条件
-	Remove(startId uint32, endId uint32, filter func(id uint32, msg *Message) bool) chan *Message
+	Remove(startId uint32, endId uint32, ch chan *Message, filter func(id uint32, msg *Message) bool)
 	Insert(msg *Message) uint32 //返回写入的id
 	Get(id uint32) *Message     //获取某个消息
 	Length() int                // 返回长度
@@ -165,11 +166,14 @@ func (self *CycleLink) innerRemove(n *node) *node {
 * 如果starId没有出现在则从头结点开始删除
 * 带有skip过滤器形式的删除
 **/
-func (self *CycleLink) Remove(startId uint32, endId uint32, filter func(id uint32, msg *Message) bool) chan *Message {
+func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan *Message, filter func(id uint32, msg *Message) bool) {
 
 	self.mutex.Lock()
-	defer self.mutex.Unlock()
-	ch := make(chan *Message, 100)
+	defer func() {
+		self.mutex.Unlock()
+		close(ch)
+	}()
+
 	start, ok_h := self.hash[startId]
 	end, ok_e := self.hash[endId]
 	// //如果endId为0那么就代表清空节点
@@ -179,8 +183,7 @@ func (self *CycleLink) Remove(startId uint32, endId uint32, filter func(id uint3
 		ok_e = true
 	} else if !ok_e {
 		//如果不存在这样end 则直接返回
-		close(ch)
-		return ch
+		return
 	}
 
 	//如果起始坐标不存在则使用头节点
@@ -206,6 +209,6 @@ func (self *CycleLink) Remove(startId uint32, endId uint32, filter func(id uint3
 		n = next
 
 	}
-	close(ch)
-	return ch
+
+	return
 }

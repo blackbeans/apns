@@ -23,8 +23,9 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 
 		case entry.RESP_SHUTDOWN, entry.RESP_ERROR, entry.RESP_UNKNOW, entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
 
+			resendCh := make(chan *entry.Message, 100)
 			//只有这三种才重发
-			ch := self.storage.Remove(resp.Identifier, 0, func(id uint32, msg *entry.Message) bool {
+			go self.storage.Remove(resp.Identifier, 0, resendCh, func(id uint32, msg *entry.Message) bool {
 				expiredTime := int64(entry.UmarshalExpiredTime(msg))
 
 				//过滤掉 不是当前连接ID的消息 或者 当前相同ID的消息 或者 (有过期时间结果已经过期的消息)
@@ -35,7 +36,7 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 
 			for {
 
-				tmp := <-ch
+				tmp := <-resendCh
 				//如果删除成功并且消息不为空则重发
 				if nil != tmp {
 					ch <- tmp

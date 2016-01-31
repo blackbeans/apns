@@ -16,7 +16,7 @@ func BenchmarkInsert(t *testing.B) {
 	ch := make(chan *Message)
 
 	go func() {
-		link.Remove(0, 0, func(id uint32, msg *Message) bool {
+		link.Remove(0, 0, ch, func(id uint32, msg *Message) bool {
 			return false
 		})
 	}()
@@ -61,15 +61,15 @@ func TestCycleLink(t *testing.T) {
 		return
 	}
 
-	ch := link.Remove(1, 2, func(id uint32, msg *Message) bool {
+	ch := make(chan *Message)
+	go link.Remove(0, 2, ch, func(id uint32, msg *Message) bool {
 		return false
 	})
-
 	//删除的是2
 	for {
 		tmp := <-ch
 		fmt.Printf("Remove-----------%s\n", tmp)
-		if nil != tmp {
+		if nil == tmp {
 			break
 		}
 	}
@@ -84,13 +84,15 @@ func TestCycleLink(t *testing.T) {
 	fmt.Println("CYCLE-FIRST-----------")
 	PrintLink(t, link)
 
-	ch = link.Remove(3, 0, func(id uint32, msg *Message) bool {
+	ch = make(chan *Message, 10)
+	go link.Remove(0, 0, ch, func(id uint32, msg *Message) bool {
+		fmt.Println("------------")
 		return false
 	})
 	//全部删除了
 	for {
+		fmt.Println("GET REMOVE LEFT_Read")
 		tmp := <-ch
-		fmt.Printf("GET REMOVE LEFT-------%t|%d\n", tmp, link.length)
 		if nil == tmp {
 			break
 		}
@@ -124,7 +126,8 @@ func TestCycleLink(t *testing.T) {
 		return
 	}
 
-	ch = link.Remove(3, 0, func(id uint32, msg *Message) bool {
+	ch = make(chan *Message, 10)
+	go link.Remove(0, 0, ch, func(id uint32, msg *Message) bool {
 		return false
 	})
 
