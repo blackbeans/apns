@@ -10,7 +10,7 @@ import (
 //接受错误的响应并触发重发
 func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Response) {
 
-	resendCh := make(chan *entry.Message, 1000)
+	resendCh := make(chan *entry.Message, 10000)
 	//启动重发任务
 	go self.resend(resendCh)
 

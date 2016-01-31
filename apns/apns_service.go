@@ -136,14 +136,14 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 		//将当前enchanced发送的数据写入到storage中
 		if msg.MsgType == entry.MESSAGE_TYPE_ENHANCED {
 			id := uint32(0)
-			// if nil != self.storage {
-			// 	//正常发送的记录即可
-			// 	id = self.storage.Insert(msg)
-			// 	if id <= 0 {
-			// 		_, json := msg.Encode()
-			// 		log.WarnLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|Store FAIL|ID Zero|Try Send|%s", string(json))
-			// 	}
-			// }
+			if nil != self.storage {
+				//正常发送的记录即可
+				id = self.storage.Insert(msg)
+				if id <= 0 {
+					_, json := msg.Encode()
+					log.WarnLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|Store FAIL|ID Zero|Try Send|%s", string(json))
+				}
+			}
 			msg.IdentifierId = id
 			// if rand.Intn(100) == 0 {
 			// 	log.Printf("APNSCLIENT|sendMessage|RECORD MESSAGE|%s\n", msg)

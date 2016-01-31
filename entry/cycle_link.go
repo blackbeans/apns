@@ -162,7 +162,7 @@ func (self *CycleLink) innerRemove(n *node) *node {
 }
 
 /**
-* 删除起始Id-->结束id的元素如果endId为-1 则全部删除
+* 删除起始Id-->结束id的元素如果endId为0 则全部删除
 * 如果starId没有出现在则从头结点开始删除
 * 带有skip过滤器形式的删除
 **/
@@ -177,7 +177,7 @@ func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan *Message, fi
 	start, ok_h := self.hash[startId]
 	end, ok_e := self.hash[endId]
 	// //如果endId为0那么就代表清空节点
-	if endId == 0 {
+	if endId <= 0 {
 		//end为head的pre
 		end = self.head.pre
 		ok_e = true
@@ -201,9 +201,12 @@ func (self *CycleLink) Remove(startId uint32, endId uint32, ch chan *Message, fi
 			//写入channel 让另一侧重发
 			ch <- n.msg
 			next = self.innerRemove(n)
+		} else {
+			next = n.next
 		}
 
-		if n == end && endId != 0 {
+		//n已经是最后一个则删除
+		if n == end {
 			break
 		}
 		n = next
