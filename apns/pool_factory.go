@@ -131,7 +131,7 @@ func (self *ConnPool) checkIdle() {
 }
 
 func (self *ConnPool) MonitorPool() (int, int, int) {
-	return self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len())
+	return self.workPool.Len(), self.idlePool.Len(), self.maxPoolSize
 }
 
 func (self *ConnPool) Get() (error, IConn) {

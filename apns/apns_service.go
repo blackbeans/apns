@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	MAX_CONNECTIONS = 50
+)
+
 //用于使用的api接口
 type ApnsClient struct {
 	factory         IConnFactory
@@ -30,7 +34,7 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 	respChan := make(chan *entry.Response, 1000)
 
 	deadline := 10 * time.Second
-	err, factory := NewConnPool(20, 30, 50, 10*time.Minute, func(id int32) (error, IConn) {
+	err, factory := NewConnPool(20, 30, MAX_CONNECTIONS, 10*time.Minute, func(id int32) (error, IConn) {
 		err, apnsconn := NewApnsConnection(respChan, cert, pushGateway, deadline, id)
 		return err, apnsconn
 	})
@@ -86,10 +90,10 @@ type ApnsMonitor struct {
 
 func (self *ApnsClient) Monitor() ApnsMonitor {
 	dc := make(map[string]int)
-	wp, ip, max := self.factory.MonitorPool()
+	wp, ip, mp := self.factory.MonitorPool()
 	dc["work_pool"] = wp
 	dc["idle_pool"] = ip
-	dc["max_pool"] = max
+	dc["max_pool"] = mp
 	return ApnsMonitor{dc}
 }
 
