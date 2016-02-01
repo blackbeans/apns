@@ -16,7 +16,7 @@ func BenchmarkInsert(t *testing.B) {
 	ch := make(chan *Message)
 
 	go func() {
-		link.Remove(0, 0, func(id uint32, msg *Message) bool {
+		link.Remove(0, 0, ch, func(id uint32, msg *Message) bool {
 			return false
 		})
 	}()
@@ -61,17 +61,36 @@ func TestCycleLink(t *testing.T) {
 		return
 	}
 
-	ch := link.Remove(1, 2, func(id uint32, msg *Message) bool {
+	//--------------测试过滤条件为true时删除
+
+	ch := make(chan *Message, 2)
+	go link.Remove(0, 0, ch, func(id uint32, msg *Message) bool {
+		return true
+	})
+	//都过滤一个都不会删除
+	for {
+		tmp, ok := <-ch
+		//只要pop出来一个不为空的或者ok还存活的那么就是错误的
+		if nil != tmp || ok {
+			t.Fail()
+			break
+		} else {
+			fmt.Printf("Remove|Filter-----------%s|%t\n", tmp, ok)
+			break
+		}
+	}
+
+	ch = make(chan *Message)
+	go link.Remove(0, 2, ch, func(id uint32, msg *Message) bool {
 		return false
 	})
-
 	//删除的是2
 	for {
 		tmp := <-ch
-		fmt.Printf("Remove-----------%s\n", tmp)
-		if nil != tmp {
+		if nil == tmp {
 			break
 		}
+		fmt.Printf("Remove-----------%d\n", tmp.IdentifierId)
 	}
 
 	//剩下3、4
@@ -84,13 +103,15 @@ func TestCycleLink(t *testing.T) {
 	fmt.Println("CYCLE-FIRST-----------")
 	PrintLink(t, link)
 
-	ch = link.Remove(3, 0, func(id uint32, msg *Message) bool {
+	ch = make(chan *Message, 10)
+	go link.Remove(0, 0, ch, func(id uint32, msg *Message) bool {
+		fmt.Println("------------")
 		return false
 	})
 	//全部删除了
 	for {
+		fmt.Println("GET REMOVE LEFT_Read")
 		tmp := <-ch
-		fmt.Printf("GET REMOVE LEFT-------%t|%d\n", tmp, link.length)
 		if nil == tmp {
 			break
 		}
@@ -124,16 +145,17 @@ func TestCycleLink(t *testing.T) {
 		return
 	}
 
-	ch = link.Remove(3, 0, func(id uint32, msg *Message) bool {
+	ch = make(chan *Message, 10)
+	go link.Remove(0, 0, ch, func(id uint32, msg *Message) bool {
 		return false
 	})
 
 	for {
 		tmp := <-ch
-		t.Logf("GET REMOVE LEFT-------%t\n", tmp)
-		if nil != tmp {
+		if nil == tmp {
 			break
 		}
+		t.Logf("GET REMOVE LEFT-------%d\n", tmp.IdentifierId)
 	}
 
 }

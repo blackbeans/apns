@@ -135,9 +135,13 @@ func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 
 		err, conn := self.factory.Get()
 		if nil != err || nil == conn || !conn.IsAlive() {
+			if nil != conn {
+				self.factory.ReleaseBroken(conn)
+			}
 			_, json := msg.Encode()
 			log.ErrorLog("push_client", "APNSCLIENT|SEND MESSAGE|FAIL|GET CONN|FAIL|%s|%s", err, string(json))
 			sendError = errors.New("GET APNS CONNECTION FAIL")
+
 			continue
 		}
 

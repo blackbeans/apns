@@ -118,12 +118,8 @@ func (self *ApnsConnection) dial() error {
 }
 
 func (self *ApnsConnection) sendMessage(msg *entry.Message) error {
-	if !self.alive ||
-		!self.conn.ConnectionState().HandshakeComplete {
-		if self.alive {
-			//存活但是不适合握手完成状态则失败
-			self.Close()
-		}
+	if !self.alive {
+		//存活但是不适合握手完成状态则失败
 		return errors.New("CONNECTION|SEND MESSAGE|FAIL|Connection Closed!")
 	}
 

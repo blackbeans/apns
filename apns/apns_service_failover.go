@@ -10,9 +10,9 @@ import (
 //接受错误的响应并触发重发
 func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Response) {
 
-	ch := make(chan *entry.Message, 1000)
+	resendCh := make(chan *entry.Message, 10000)
 	//启动重发任务
-	go self.resend(ch)
+	go self.resend(resendCh)
 
 	//开始启动
 	for self.running {
@@ -24,7 +24,8 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 		case entry.RESP_SHUTDOWN, entry.RESP_ERROR, entry.RESP_UNKNOW, entry.RESP_INVALID_TOKEN, entry.RESP_INVALID_TOKEN_SIZE:
 
 			//只有这三种才重发
-			ch := self.storage.Remove(resp.Identifier, 0, func(id uint32, msg *entry.Message) bool {
+			ch := make(chan *entry.Message, 100)
+			go self.storage.Remove(resp.Identifier, 0, ch, func(id uint32, msg *entry.Message) bool {
 				expiredTime := int64(entry.UmarshalExpiredTime(msg))
 
 				//过滤掉 不是当前连接ID的消息 或者 当前相同ID的消息 或者 (有过期时间结果已经过期的消息)
@@ -35,14 +36,15 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 
 			for {
 
-				tmp := <-ch
+				tmp, ok := <-ch
 				//如果删除成功并且消息不为空则重发
 				if nil != tmp {
-					ch <- tmp
-				} else {
+					resendCh <- tmp
+				} else if !ok {
 					break
 				}
 			}
+
 			log.InfoLog("push_client", "APNSCLIENT|onErrorResponseRecieve|ERROR|%d", resp.Status)
 
 			//非法的token，那么就存储起来
