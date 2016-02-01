@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/blackbeans/log4go"
 	"github.com/go-errors/errors"
@@ -51,6 +52,7 @@ func (self *ApnsHttpServer) dial(hp string) {
 	log.InfoLog("push_handler", "APNS HTTPSERVER IS STARTING ....")
 	http.HandleFunc("/apns/push", self.handlePush)
 	http.HandleFunc("/apns/feedback", self.handleFeedBack)
+	http.HandleFunc("/apns/stat", self.handleStat)
 
 	err := self.httpserver.ListenAndServe()
 	if nil != err {
@@ -66,6 +68,15 @@ func (self *ApnsHttpServer) Shutdown() {
 	self.apnsClient.Destory()
 	log.InfoLog("push_handler", "APNS HTTP SERVER SHUTDOWN SUCC ....")
 
+}
+
+func (self *ApnsHttpServer) handleStat(out http.ResponseWriter, req *http.Request) {
+
+	//获取状态
+	status := self.apnsClient.Monitor()
+	jsonData, _ := json.Marshal(status)
+	out.Header().Set("content-type", "text/json")
+	out.Write(jsonData)
 }
 
 func (self *ApnsHttpServer) handleFeedBack(out http.ResponseWriter, req *http.Request) {

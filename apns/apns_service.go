@@ -11,7 +11,6 @@ import (
 )
 
 //用于使用的api接口
-
 type ApnsClient struct {
 	factory         IConnFactory
 	feedbackFactory IConnFactory //用于查询feedback的链接
@@ -79,6 +78,19 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 
 	return client
 
+}
+
+type ApnsMonitor struct {
+	PoolStat map[string]int `json:"pool_stat"`
+}
+
+func (self *ApnsClient) Monitor() ApnsMonitor {
+	dc := make(map[string]int)
+	wp, ip, max := self.factory.MonitorPool()
+	dc["work_pool"] = wp
+	dc["idle_pool"] = ip
+	dc["max_pool"] = max
+	return ApnsMonitor{dc}
 }
 
 //发送简单的notification
