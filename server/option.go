@@ -2,7 +2,7 @@ package server
 
 import (
 	"crypto/tls"
-	"encoding/json"
+
 	log "github.com/blackbeans/log4go"
 	"io/ioutil"
 	"net/http"
@@ -40,30 +40,14 @@ const (
 	RESP_STATUS_FETCH_FEEDBACK_OVER_LIMIT_ERROR = 507 //获取feedback的数量超过最大限制
 )
 
-type response struct {
-	Status int         `json:"status,omitempty"`
-	Error  error       `json:"error,omitempty"`
-	Body   interface{} `json:"body,omitempty"` //只有在response的时候才会有
-}
-
-func (self *response) Marshal() []byte {
-	data, err := json.Marshal(self)
-	if nil != err {
-		//就是数据哦有问题了
-		return nil
-	} else {
-		return data
-	}
-}
-
 type Option struct {
-	startMode       int
-	bindAddr        string
-	cert            tls.Certificate
-	pushAddr        string
-	feedbackAddr    string
-	expiredTime     uint32 //默认十分钟过期
-	storageCapacity int    //用于存储临时发送的数据量
+	StartMode       int
+	BindAddr        string
+	Cert            tls.Certificate
+	PushAddr        string
+	FeedbackAddr    string
+	ExpiredTime     uint32 //默认十分钟过期
+	StorageCapacity int    //用于存储临时发送的数据量
 }
 
 func NewOption(startMode int, bindaddr string, certpath string, keypath string, runmode int, storageCapacity int) Option {
@@ -77,8 +61,9 @@ func NewOption(startMode int, bindaddr string, certpath string, keypath string, 
 	}
 	cert := loadCert(certpath, keypath)
 
-	return Option{startMode: startMode, bindAddr: bindaddr, cert: cert, pushAddr: pushaddr, feedbackAddr: feedbackAddr,
-		expiredTime: 24 * 60 * 60, storageCapacity: storageCapacity}
+	return Option{StartMode: startMode, BindAddr: bindaddr,
+		Cert: cert, PushAddr: pushaddr, FeedbackAddr: feedbackAddr,
+		ExpiredTime: 24 * 60 * 60, StorageCapacity: storageCapacity}
 }
 func loadCert(certpath string, keypath string) tls.Certificate {
 

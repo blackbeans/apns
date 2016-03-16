@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"go-apns/server"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -34,9 +35,9 @@ func BenchmarkMockHttpServer(t *testing.B) {
 }
 
 func TestApnsHttpServer(t *testing.T) {
-	option := NewOption(STARTMODE_ONLINE, ":17070", CERT_PATH, KEY_PATH, RUNMODE_ONLINE, 100)
-	option.expiredTime = uint32(6 * 3600)
-	option.storageCapacity = 100
+	option := server.NewOption(server.STARTMODE_ONLINE, ":17070", CERT_PATH, KEY_PATH, server.RUNMODE_ONLINE, 100)
+	option.ExpiredTime = uint32(6 * 3600)
+	option.StorageCapacity = 100
 	server := NewApnsHttpServer(option)
 
 	//测试发送
@@ -53,7 +54,7 @@ func innerApsnHttpServerSend(t testing.TB) {
 	// fmt.Println("innerApsnHttpServerSend is Starting")
 
 	data := make(url.Values)
-	data.Set("pt", NOTIFY_ENHANCED_FORMAT)
+	data.Set("pt", server.NOTIFY_ENHANCED_FORMAT)
 	data.Set("token", apnsToken)
 	data.Set("sound", "ms.caf")
 	data.Set("badge", "10")
@@ -87,7 +88,7 @@ func innerApsnHttpServerSend(t testing.TB) {
 	}
 	// fmt.Printf("--------------respose:%s\n", response)
 
-	if response.Status != RESP_STATUS_SUCC {
+	if response.Status != server.RESP_STATUS_SUCC {
 		t.Fail()
 		return
 	}
@@ -123,7 +124,7 @@ func innerApsnHttpServerFeedback(t *testing.T) {
 	}
 	t.Logf("--------------respose:%s\n", response.Status)
 
-	if response.Status != RESP_STATUS_SUCC {
+	if response.Status != server.RESP_STATUS_SUCC {
 		t.Fail()
 		return
 	} else {

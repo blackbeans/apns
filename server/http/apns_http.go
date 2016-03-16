@@ -7,10 +7,27 @@ import (
 	"github.com/go-errors/errors"
 	"go-apns/apns"
 	"go-apns/entry"
+	"go-apns/server"
 	"net/http"
 	"strconv"
 	"sync"
 )
+
+type response struct {
+	Status int         `json:"status,omitempty"`
+	Error  error       `json:"error,omitempty"`
+	Body   interface{} `json:"body,omitempty"` //只有在response的时候才会有
+}
+
+func (self *response) Marshal() []byte {
+	data, err := json.Marshal(self)
+	if nil != err {
+		//就是数据哦有问题了
+		return nil
+	} else {
+		return data
+	}
+}
 
 type ApnsHttpServer struct {
 	feedbackChan chan *entry.Feedback //用于接收feedback的chan
@@ -20,29 +37,20 @@ type ApnsHttpServer struct {
 	httpserver   *MomoHttpServer
 }
 
-func NewApnsHttpServer(option Option) *ApnsHttpServer {
+func NewApnsHttpServer(logxml string, option server.Option,
+	feedbackChan chan *entry.Feedback,
+	apnsClient *apns.ApnsClient) *ApnsHttpServer {
 
-	feedbackChan := make(chan *entry.Feedback, 1000)
-	var apnsClient *apns.ApnsClient
-	if option.startMode == STARTMODE_MOCK {
-		//初始化mock apns
-		apnsClient = apns.NewMockApnsClient(option.cert,
-			option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
-		log.Info("MOCK APNS HTTPSERVER IS STARTING ....")
-	} else {
-		//初始化apns
-		apnsClient = apns.NewDefaultApnsClient(option.cert,
-			option.pushAddr, chan<- *entry.Feedback(feedbackChan), option.feedbackAddr, entry.NewCycleLink(3, option.storageCapacity))
-		log.InfoLog("push_handler", "ONLINE APNS HTTPSERVER IS STARTING ....")
-	}
+	//加载log4go的配置
+	log.LoadConfiguration(logxml)
 
 	server := &ApnsHttpServer{feedbackChan: feedbackChan,
-		apnsClient: apnsClient, expiredTime: option.expiredTime}
+		apnsClient: apnsClient, expiredTime: option.ExpiredTime}
 
 	//创建http
-	server.httpserver = NewMomoHttpServer(option.bindAddr, nil)
+	server.httpserver = NewMomoHttpServer(option.BindAddr, nil)
 
-	go server.dial(option.bindAddr)
+	go server.dial(option.BindAddr)
 
 	return server
 }
@@ -81,21 +89,21 @@ func (self *ApnsHttpServer) handleStat(out http.ResponseWriter, req *http.Reques
 
 func (self *ApnsHttpServer) handleFeedBack(out http.ResponseWriter, req *http.Request) {
 	response := &response{}
-	response.Status = RESP_STATUS_SUCC
+	response.Status = server.RESP_STATUS_SUCC
 
 	if req.Method == "GET" {
 		//本次获取多少个feedback
 		limitV := req.FormValue("limit")
 		limit, _ := strconv.ParseInt(limitV, 10, 32)
 		if limit > 100 {
-			response.Status = RESP_STATUS_FETCH_FEEDBACK_OVER_LIMIT_ERROR
+			response.Status = server.RESP_STATUS_FETCH_FEEDBACK_OVER_LIMIT_ERROR
 			response.Error = errors.New("Fetch Feedback Over limit 100 ")
 		} else {
 			//发起了获取feedback的请求
 			err := self.apnsClient.FetchFeedback(int(limit))
 			if nil != err {
 				response.Error = err
-				response.Status = RESP_STATUS_ERROR
+				response.Status = server.RESP_STATUS_ERROR
 			} else {
 				//等待feedback数据
 				packet := make([]*entry.Feedback, 0, limit)
@@ -111,7 +119,7 @@ func (self *ApnsHttpServer) handleFeedBack(out http.ResponseWriter, req *http.Re
 			}
 		}
 	} else {
-		response.Status = RESP_STATUS_INVALID_PROTO
+		response.Status = server.RESP_STATUS_INVALID_PROTO
 		response.Error = errors.New("Unsupport Post method Invoke!")
 	}
 
@@ -122,10 +130,10 @@ func (self *ApnsHttpServer) handleFeedBack(out http.ResponseWriter, req *http.Re
 func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Request) {
 
 	resp := &response{}
-	resp.Status = RESP_STATUS_SUCC
+	resp.Status = server.RESP_STATUS_SUCC
 	if req.Method == "GET" {
 		//返回不支持的请求方式
-		resp.Status = RESP_STATUS_INVALID_PROTO
+		resp.Status = server.RESP_STATUS_INVALID_PROTO
 		resp.Error = errors.New("Unsupport Get method Invoke!")
 
 	} else if req.Method == "POST" {
@@ -147,14 +155,14 @@ func (self *ApnsHttpServer) handlePush(out http.ResponseWriter, req *http.Reques
 		}
 
 		//----------------如果依然是成功状态则证明当前可以发送
-		if RESP_STATUS_SUCC == resp.Status {
+		if server.RESP_STATUS_SUCC == resp.Status {
 
 			func() {
 				defer func() {
 					if re := recover(); nil != re {
 						stack := re.(*errors.Error).ErrorStack()
 						log.ErrorLog("push_handler", "ApnsHttpServer|handlePush|SEND|FAIL|%s|%s|%s", stack, payload, trace)
-						resp.Status = RESP_STATUS_ERROR
+						resp.Status = server.RESP_STATUS_ERROR
 						resp.Error = errors.New(fmt.Sprintf("%s", re))
 						self.write(out, resp)
 					}

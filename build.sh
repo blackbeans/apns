@@ -2,6 +2,8 @@
 
 go get  github.com/blackbeans/log4go
 go get  github.com/go-errors/errors
+go get git.wemomo.com/bibi/go-moa/core
+go get git.wemomo.com/bibi/go-moa/proxy
 
 go build go-apns/entry
 go install go-apns/entry
