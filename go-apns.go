@@ -24,7 +24,7 @@ func main() {
 	bindAddr := flag.String("bindAddr", "", "-bindAddr=:17070")
 	certPath := flag.String("certPath", "./cert.pem", "-certPath=xxxxxx/cert.pem or -certPath=http://")
 	keyPath := flag.String("keyPath", "./key.pem", "-keyPath=xxxxxx/key.pem or -keyPath=http://")
-	runMode := flag.Int("runMode", 0, "-runMode=1(online) ,0(sandbox)")
+	env := flag.Int("env", 0, "-env=1(online) ,0(sandbox)")
 	storeCap := flag.Int("storeCap", 1000, "-storeCap=100000  //重发链条长度")
 	logxml := flag.String("log", "./conf/log.xml", "-log=./conf/log.xml //log配置文件")
 	pprofPort := flag.String("pprof", ":9090", "-pprof=:9090 //端口")
@@ -33,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	//设置启动项
-	option := server.NewOption(*startMode, *bindAddr, *certPath, *keyPath, *runMode, *storeCap)
+	option := server.NewOption(*startMode, *bindAddr, *certPath, *keyPath, *env, *storeCap)
 	feedbackChan := make(chan *entry.Feedback, 1000)
 	var apnsClient *apns.ApnsClient
 	if option.StartMode == server.STARTMODE_MOCK {
