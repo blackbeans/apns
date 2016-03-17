@@ -28,6 +28,7 @@ func main() {
 	logxml := flag.String("log", "./conf/log.xml", "-log=./conf/log.xml //log配置文件")
 	pprofPort := flag.String("pprof", ":9090", "-pprof=:9090 //端口")
 	configPath := flag.String("configPath", "", "-configPath=conf/go_apns_moa.toml //moa启动的配置文件")
+	serverMode := flag.String("serverMode", "http", "-serverMode=http/moa //http或者moa方式启动")
 	flag.Parse()
 
 	go func() {
@@ -55,13 +56,14 @@ func main() {
 		log.InfoLog("push_handler", "ONLINE APNS HTTPSERVER IS STARTING ....")
 	}
 	var apnsserver *h.ApnsHttpServer
-	if nil != bindAddr && len(*bindAddr) > 0 {
+	var app *moa.Bootstrap
+	if nil != serverMode && "http" == *serverMode {
 		//启动http形式的
 		apnsserver = h.NewApnsHttpServer(*logxml, option, feedbackChan, apnsClient)
-	}
-	var app *moa.Bootstrap
-	if nil != configPath && len(*configPath) > 0 {
+	} else if nil != serverMode && "moa" == *serverMode {
 		app = moa.NewBootstrap(*configPath, option, feedbackChan, apnsClient)
+	} else {
+		panic("UnSupport ServerMode [" + *serverMode + "]")
 	}
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Kill)
