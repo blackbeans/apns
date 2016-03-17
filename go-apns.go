@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	log "github.com/blackbeans/log4go"
 	"go-apns/apns"
@@ -31,13 +32,6 @@ func main() {
 	serverMode := flag.String("serverMode", "http", "-serverMode=http/moa //http或者moa方式启动")
 	flag.Parse()
 
-	go func() {
-		if len(*pprofPort) > 0 {
-			addr, _ := net.ResolveTCPAddr("tcp4", *bindAddr)
-			log.Error(http.ListenAndServe(addr.IP.String()+*pprofPort, nil))
-		}
-	}()
-
 	//设置启动项
 	option := server.NewOption(*startMode, *bindAddr, *certPath, *keyPath, *runMode, *storeCap)
 	feedbackChan := make(chan *entry.Feedback, 1000)
@@ -55,6 +49,22 @@ func main() {
 			option.FeedbackAddr, entry.NewCycleLink(3, option.StorageCapacity))
 		log.InfoLog("push_handler", "ONLINE APNS HTTPSERVER IS STARTING ....")
 	}
+
+	//------------启动pprof
+	go func() {
+		if len(*pprofPort) > 0 {
+			addr, _ := net.ResolveTCPAddr("tcp4", *bindAddr)
+			http.HandleFunc("/apns/stat", func(out http.ResponseWriter, req *http.Request) {
+				//获取状态
+				status := apnsClient.Monitor()
+				jsonData, _ := json.Marshal(status)
+				out.Header().Set("content-type", "text/json")
+				out.Write(jsonData)
+			})
+			log.Error(http.ListenAndServe(addr.IP.String()+*pprofPort, nil))
+		}
+	}()
+
 	var apnsserver *h.ApnsHttpServer
 	var app *moa.Bootstrap
 	if nil != serverMode && "http" == *serverMode {
