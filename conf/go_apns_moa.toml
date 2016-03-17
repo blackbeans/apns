@@ -4,8 +4,8 @@
 #当前使用的环境
 [env]
 name="moa-demo"
-runMode="dev"
-bindAddress="172.30.3.124:13000"
+runMode="online"
+bindAddress="^10\\.83\\.\\d+\\.\\d+$:13000"
 #可以是momokeeper或者zookeeper
 registryType="momokeeper" 
 
@@ -21,7 +21,7 @@ registryType="momokeeper"
 	[clusters.dev]
 		#env=dev/online
 		env="dev" 
-		logFile="log_test.xml"
+		logFile="conf/log_test.xml"
 		processTimeout=5
 		#最大分发处理协程数
 		maxDispatcherSize=8000 
@@ -37,7 +37,7 @@ registryType="momokeeper"
 	[clusters.online]
 		#env=dev/online
 		env="online" 
-		logFile="log_test.xml"
+		logFile="conf/log.xml"
 		processTimeout=5
 		#最大分发处理协程数
 		maxDispatcherSize=8000 

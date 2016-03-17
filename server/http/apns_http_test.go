@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"go-apns/apns"
+	"go-apns/entry"
 	"go-apns/server"
 	"io/ioutil"
 	"net/http"
@@ -38,7 +40,23 @@ func TestApnsHttpServer(t *testing.T) {
 	option := server.NewOption(server.STARTMODE_ONLINE, ":17070", CERT_PATH, KEY_PATH, server.RUNMODE_ONLINE, 100)
 	option.ExpiredTime = uint32(6 * 3600)
 	option.StorageCapacity = 100
-	server := NewApnsHttpServer(option)
+
+	feedbackChan := make(chan *entry.Feedback, 1000)
+	var apnsClient *apns.ApnsClient
+	if option.StartMode == server.STARTMODE_MOCK {
+		//初始化mock apns
+		apnsClient = apns.NewMockApnsClient(option.Cert,
+			option.PushAddr, chan<- *entry.Feedback(feedbackChan),
+			option.FeedbackAddr, entry.NewCycleLink(3, option.StorageCapacity))
+	} else {
+		//初始化apns
+		apnsClient = apns.NewDefaultApnsClient(option.Cert,
+			option.PushAddr, chan<- *entry.Feedback(feedbackChan),
+			option.FeedbackAddr, entry.NewCycleLink(3, option.StorageCapacity))
+
+	}
+
+	server := NewApnsHttpServer("../../log_dev.xml", option, feedbackChan, apnsClient)
 
 	//测试发送
 	innerApsnHttpServerSend(t)

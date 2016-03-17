@@ -25,9 +25,9 @@ func main() {
 	keyPath := flag.String("keyPath", "./key.pem", "-keyPath=xxxxxx/key.pem or -keyPath=http://")
 	runMode := flag.Int("runMode", 0, "-runMode=1(online) ,0(sandbox)")
 	storeCap := flag.Int("storeCap", 1000, "-storeCap=100000  //重发链条长度")
-	logxml := flag.String("log", "log.xml", "-log=log.xml //log配置文件")
+	logxml := flag.String("log", "./conf/log.xml", "-log=./conf/log.xml //log配置文件")
 	pprofPort := flag.String("pprof", ":9090", "-pprof=:9090 //端口")
-	configPath := flag.String("configPath", "", "-configPath=~/cluster_moa.toml //moa启动的配置文件")
+	configPath := flag.String("configPath", "", "-configPath=conf/go_apns_moa.toml //moa启动的配置文件")
 	flag.Parse()
 
 	go func() {
