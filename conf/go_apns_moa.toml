@@ -3,7 +3,7 @@
 
 #当前使用的环境
 [env]
-name="moa-demo"
+name="go-apns-moa"
 runMode="online"
 bindAddress="^10\\.83\\.\\d+\\.\\d+$:13000"
 #可以是momokeeper或者zookeeper

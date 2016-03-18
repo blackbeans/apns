@@ -3,8 +3,8 @@
 
 #当前使用的环境
 [env]
-name="moa-demo"
-runMode="online"
+name="go-apns-moa"
+runMode="dev"
 bindAddress="^10\\.83\\.\\d+\\.\\d+$:13001"
 #可以是momokeeper或者zookeeper
 registryType="momokeeper"
@@ -14,7 +14,7 @@ serviceUriSuffix="-dev"
 #registry的管理	
 [registry]
 	[registry.dev]
-		hosts="test_moa_admin.momo.com:10020,test_moa_lookup.momo.com:10010"
+		hosts="moa_admin.momo.com:10020,moa_lookup.momo.com:10010"
 	[registry.online]
 		hosts="moa_admin.momo.com:10020,moa_lookup.momo.com:10010" 
 
