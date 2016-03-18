@@ -10,7 +10,7 @@
     <tag>apns_debug</tag>
     <type>file</type>
     <level>INFO</level>
-    <property name="filename">./logs/go-apns/apns_stdout.log</property>
+    <property name="filename">./logs/go-apns-moa/apns_stdout.log</property>
     <!--
        %T - Time (15:04:05 MST)
        %t - Time (15:04)
@@ -32,7 +32,7 @@
     <tag>apns_info</tag>
     <type>file</type>
     <level>INFO</level>
-    <property name="filename">./logs/go-apns/apns_info.log</property>
+    <property name="filename">./logs/go-apns-moa/apns_info.log</property>
     <!--
        %T - Time (15:04:05 MST)
        %t - Time (15:04)
@@ -54,7 +54,7 @@
     <tag>apns_warn</tag>
     <type>file</type>
     <level>WARNING</level>
-    <property name="filename">./logs/go-apns/apns_warn.log</property>
+    <property name="filename">./logs/go-apns-moa/apns_warn.log</property>
     <property name="format">[%D %T] [%L] %M</property>
     <property name="rotate">true</property>
     <property name="maxsize">100M</property>
@@ -65,7 +65,7 @@
     <tag>apns_error</tag>
     <type>file</type>
     <level>ERROR</level>
-    <property name="filename">./logs/go-apns/apns_error.log</property>
+    <property name="filename">./logs/go-apns-moa/apns_error.log</property>
     <property name="format">[%D %T] [%L] (%S) %M</property>
     <property name="rotate">true</property>
     <property name="maxsize">100M</property>
@@ -77,7 +77,7 @@
     <tag>push_handler</tag>
     <type>file</type>
     <level>INFO</level>
-    <property name="filename">./logs/go-apns/push_handler.log</property>
+    <property name="filename">./logs/go-apns-moa/push_handler.log</property>
     <property name="format">[%D %T] [%L] %M</property>
     <property name="rotate">true</property>
     <property name="maxsize">100M</property>
@@ -89,7 +89,7 @@
     <tag>apns_pool</tag>
     <type>file</type>
     <level>INFO</level>
-    <property name="filename">./logs/go-apns/apns_pool.log</property>
+    <property name="filename">./logs/go-apns-moa/apns_pool.log</property>
     <property name="format">[%D %T] [%L] %M</property>
     <property name="rotate">true</property>
     <property name="maxsize">100M</property>
