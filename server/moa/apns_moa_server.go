@@ -8,6 +8,7 @@ import (
 	"go-apns/entry"
 	"go-apns/server"
 	"reflect"
+	"regexp"
 	"sync"
 )
 
@@ -15,6 +16,12 @@ const (
 	PUSH_TYPE_SIMPLE    = 0
 	PUSH_TYPE_ENCHANCED = 1
 )
+
+var regx *regexp.Regexp
+
+func init() {
+	regx, _ = regexp.Compile("\\w+")
+}
 
 //apns发送的参数
 type ApnsParams struct {
@@ -91,6 +98,14 @@ func (self ApnsServer) SendNotification(pushType byte, params ApnsParams) (bool,
 	if len(params.Body) > 0 {
 		aps.Alert = params.Body
 	}
+
+	//将空格的token拼装我一个
+	tokenSplit := regx.FindAllString(params.Token, -1)
+	var token string = ""
+	for _, v := range tokenSplit {
+		token += v
+	}
+	params.Token = token
 
 	//拼接payload
 	payload := entry.NewSimplePayLoadWithAps(aps)
