@@ -61,36 +61,73 @@ quick start
 Http方式发送IOS PUSH
 ===================
 ####Server端使用：
+    1. sh build.sh
+    2. ./go-apns -startMode=1 -bindAddr=${IP:PORT} -certPath=${HOME}/cert.pem -keyPath=${HOME}/key.pem  -env=1 -pprof=:18070 -serverMode=moa -configPath=./conf/go_apns_moa.toml
 
-    import (
-    "flag"
-    "go-apns/server"
-    "os"
-    "os/signal"
-    )
-
-    func main() {
+    参数解释：
         startMode := flag.Int("startMode", 1, " 0 为mock ,1 为正式")
-        bindAddr := flag.String("bindAddr", ":17070", "-bindAddr=:17070")
-        certPath := flag.String("certPath", "", "-certPath=/User/xxx")
-        keyPath := flag.String("keyPath", "", "-keyPath=/User/xxx")
-        runMode := flag.Int("runMode", 0, "-runMode=1(online) ,0(sandbox)")
-        storeCap := flag.Int("storeCap", 0, "-storeCap=100000  //重发链条长度")        flag.Parse()
+        bindAddr := flag.String("bindAddr", "", "-bindAddr=:17070")
+        certPath := flag.String("certPath", "./cert.pem", "-certPath=xxxxxx/cert.pem or -certPath=http://")
+        keyPath := flag.String("keyPath", "./key.pem", "-keyPath=xxxxxx/key.pem or -keyPath=http://")
+        env := flag.Int("env", 0, "-env=1(online) ,0(sandbox)")
+        storeCap := flag.Int("storeCap", 1000, "-storeCap=100000  //重发链条长度")
+        logxml := flag.String("log", "./conf/log.xml", "-log=./conf/log.xml //log配置文件")
+        pprofPort := flag.String("pprof", ":9090", "-pprof=:9090 //端口")
+        configPath := flag.String("configPath", "", "-configPath=conf/go_apns_moa.toml //moa启动的配置文件")
+        serverMode := flag.String("serverMode", "http", "-serverMode=http/moa //http或者moa方式启动")
+        flag.Parse()
 
-        //设置启动项
-        option := server.NewOption(*bindAddr, *certPath, *keyPath, *runMode, *storeCap)
-        apnsserver := server.NewApnsHttpServer(option)
-        ch := make(chan os.Signal, 1)
-        signal.Notify(ch, os.Kill)
-        //kill掉的server
-        <-ch
-        apnsserver.Shutdown()
+####MOA Client端发起调用
+    go get git.wemomo.com/bibi/go-moa-client/client
+    go get git.wemomo.com/bibi/go-moa/proxy
+    go install  git.wemomo.com/bibi/go-moa-client/client
+    go install  git.wemomo.com/bibi/go-moa/proxy
+
+服务的URI为：
+    /service/bibi/apns-service
+客户端代码：
+    
+    package main
+    import (
+        "git.wemomo.com/bibi/go-moa-client/client"
+        "git.wemomo.com/bibi/go-moa/proxy"
+    )
+    
+    //apns发送的参数
+    type ApnsParams struct {
+        ExpSeconds int                    `json:"expiredSeconds"`
+        Token      string                 `json:"token"`
+        Sound      string                 `json:"sound"`
+        Badge      int                    `json:"badge"`
+        Body       string                 `json:"body"`
+        ExtArgs    map[string]interface{} `json:"extArgs"`
+    }
+    
+    type ApnsService struct {
+        SendNotification func(pushType byte, params ApnsParams) (bool, error)
+    }
+    
+    func main() {
+        consumer := client.NewMoaConsumer("go_moa_client.toml",
+            []proxy.Service{proxy.Service{
+                ServiceUri: " /service/bibi/apns-service",
+                Interface:  &ApnsService{}},
+            })
+    
+        h := consumer.GetService("/service/bibi/apns-service").(*ApnsService)
+        succ, err := h.SendNotification(1, ApnsParams{})
+    
     }
 
-    测试启动：
-    go run demo.go  -certPath=/Users/blackbeans/pushcert.pem -keyPath=/Users/blackbeans/key.pem -bindAddr=:17070 -runMode=1
+注：go_moa_client.toml [文件参考](http://github.com/blackbeans/go-moa-client/blob/master/conf/moa_client.toml)
 
-####Client端发起调用
+
+
+
+ 
+
+
+####HTTP Client端发起调用
     发送PUSH的POST协议：
     请求REQ：
         http://localhost:7070/apns/push
