@@ -1,8 +1,8 @@
 package moa
 
 import (
-	"git.wemomo.com/bibi/go-moa/core"
-	"git.wemomo.com/bibi/go-moa/proxy"
+	"github.com/blackbeans/go-moa/core"
+	"github.com/blackbeans/go-moa/proxy"
 	"github.com/go-errors/errors"
 	"go-apns/apns"
 	"go-apns/entry"

@@ -2,8 +2,8 @@
 
 go get  github.com/blackbeans/log4go
 go get  github.com/go-errors/errors
-go get -insecure git.wemomo.com/bibi/go-moa/core
-go get -insecure git.wemomo.com/bibi/go-moa/proxy
+go get -insecure github.com/blackbeans/go-moa/core
+go get -insecure github.com/blackbeans/go-moa/proxy
 
 go build go-apns/entry
 go install go-apns/entry
