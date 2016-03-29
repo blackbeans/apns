@@ -10,7 +10,7 @@ import (
 //仅用于测试用的client 不走苹果发送，只看tps
 func NewMockApnsClient(cert tls.Certificate, pushGateway string,
 	feedbackChan chan<- *entry.Feedback, feedbackGateWay string,
-	storage entry.IMessageStorage) *ApnsClient {
+	storage entry.IMessageStorage, tokenStorage entry.ITokenStorage) *ApnsClient {
 
 	//发送失败后的响应channel
 	respChan := make(chan *entry.Response, 1000)
@@ -34,5 +34,5 @@ func NewMockApnsClient(cert tls.Certificate, pushGateway string,
 		return nil
 	}
 
-	return newApnsClient(factory, feedbackFactory, storage, respChan)
+	return newApnsClient(factory, feedbackFactory, storage, tokenStorage, respChan)
 }

@@ -42,7 +42,7 @@ func TestSendMessage(t *testing.T) {
 
 	body := "hello apns"
 	payload := entry.NewSimplePayLoad("ms.caf", 1, body)
-	client := NewApnsClient(&ConnFacotry{conn: conn}, &ConnFacotry{conn: feedback}, entry.NewCycleLink(3, 100))
+	client := NewApnsClient(&ConnFacotry{conn: conn}, &ConnFacotry{conn: feedback}, entry.NewCycleLink(3, 100), nil)
 	for i := 0; i < 1; i++ {
 		err := client.SendEnhancedNotification(math.MaxUint32, apnsToken, *payload)
 		// err := client.SendSimpleNotification(apnsToken, payload)
@@ -91,7 +91,7 @@ func TestPoolSendMessage(t *testing.T) {
 
 	body := "hello apns"
 	payload := entry.NewSimplePayLoad("ms.caf", 1, body)
-	client := NewDefaultApnsClient(cert, PUSH_APPLE, feedbackChan, FEED_BACK_APPLE, entry.NewCycleLink(3, 100))
+	client := NewDefaultApnsClient(cert, PUSH_APPLE, feedbackChan, FEED_BACK_APPLE, entry.NewCycleLink(3, 100), nil)
 	for i := 0; i < 1; i++ {
 		err := client.SendEnhancedNotification(math.MaxUint32, apnsToken, *payload)
 		// err := client.SendSimpleNotification(apnsToken, payload)

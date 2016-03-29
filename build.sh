@@ -1,9 +1,9 @@
 #!/bin/bash
-
 go get  github.com/blackbeans/log4go
+go get 	gopkg.in/redis.v3
 go get  github.com/go-errors/errors
-go get -insecure github.com/blackbeans/go-moa/core
-go get -insecure github.com/blackbeans/go-moa/proxy
+go get  github.com/blackbeans/go-moa/core
+go get  github.com/blackbeans/go-moa/proxy
 
 go build go-apns/entry
 go install go-apns/entry

@@ -15,6 +15,8 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strconv"
+	"strings"
 )
 
 func main() {
@@ -30,7 +32,12 @@ func main() {
 	pprofPort := flag.String("pprof", ":9090", "-pprof=:9090 //端口")
 	configPath := flag.String("configPath", "", "-configPath=conf/go_apns_moa.toml //moa启动的配置文件")
 	serverMode := flag.String("serverMode", "http", "-serverMode=http/moa //http或者moa方式启动")
+	tokenStorage := flag.String("tokenStorage", "",
+		"redis://addrs=localhost:6379,localhost:6379&expiredSec=86400 //非法token的存储")
 	flag.Parse()
+
+	//parseDB
+	tokens := parseDb(*tokenStorage)
 
 	//设置启动项
 	option := server.NewOption(*startMode, *bindAddr, *certPath, *keyPath, *env, *storeCap)
@@ -40,13 +47,13 @@ func main() {
 		//初始化mock apns
 		apnsClient = apns.NewMockApnsClient(option.Cert,
 			option.PushAddr, chan<- *entry.Feedback(feedbackChan),
-			option.FeedbackAddr, entry.NewCycleLink(3, option.StorageCapacity))
+			option.FeedbackAddr, entry.NewCycleLink(3, option.StorageCapacity), tokens)
 		log.Info("MOCK APNS HTTPSERVER IS STARTING ....")
 	} else {
 		//初始化apns
 		apnsClient = apns.NewDefaultApnsClient(option.Cert,
 			option.PushAddr, chan<- *entry.Feedback(feedbackChan),
-			option.FeedbackAddr, entry.NewCycleLink(3, option.StorageCapacity))
+			option.FeedbackAddr, entry.NewCycleLink(3, option.StorageCapacity), tokens)
 		log.InfoLog("push_handler", "ONLINE APNS HTTPSERVER IS STARTING ....")
 	}
 
@@ -88,4 +95,43 @@ func main() {
 
 	log.Info("APNS SERVER IS STOPPED!")
 
+}
+
+//parse schema for db
+func parseDb(db string) entry.ITokenStorage {
+	if len(db) <= 0 {
+		return nil
+	}
+	//redis的存储
+	if strings.HasPrefix(db, "redis://") {
+		db = strings.TrimPrefix(db, "redis://")
+		params := strings.Split(db, "&")
+		args := make(map[string]string, 1)
+		for _, p := range params {
+			split := strings.Split(p, "=")
+			args[split[0]] = split[1]
+		}
+
+		v, ok := args["expiredSec"]
+		if !ok {
+			v = "86400"
+		}
+
+		addrs, ok := args["addrs"]
+		if !ok {
+			return nil
+		}
+
+		split := strings.Split(addrs, ",")
+		master := split[0]
+		slave := split[0]
+		if len(split) > 1 {
+			slave = split[1]
+		}
+
+		num, _ := strconv.ParseInt(v, 10, 32)
+		return entry.NewTokenStorage(num, master, slave)
+	}
+
+	return nil
 }

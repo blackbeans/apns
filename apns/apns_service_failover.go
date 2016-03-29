@@ -11,8 +11,10 @@ import (
 func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Response) {
 
 	resendCh := make(chan *entry.Message, 10000)
+	tokenCh := make(chan string, 1000)
 	//启动重发任务
 	go self.resend(resendCh)
+	go self.storeInvalidToken(tokenCh)
 
 	//开始启动
 	for self.running {
@@ -55,7 +57,8 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 				if nil != msg {
 					//从msg中拿出token用于记录
 					token := entry.UmarshalToken(msg)
-					self.storeInvalidToken(token)
+					tokenCh <- token
+					// self.storeInvalidToken(token)
 					log.WarnLog("push_client", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
 				}
 			}
@@ -83,7 +86,34 @@ func (self *ApnsClient) resend(ch chan *entry.Message) {
 
 }
 
-func (self *ApnsClient) storeInvalidToken(token string) {
-	//这里是里面最后存储不合法的token
-	log.WarnLog("push_client", "APNSCLIENT|UnImplement StoreInvalidToken|%s\n", token)
+func (self *ApnsClient) storeInvalidToken(ch chan string) {
+	batch := make([]string, 0, 10)
+	for self.running {
+		var token string
+		select {
+		case token = <-ch:
+		case <-time.After(5 * time.Second):
+		}
+
+		func() {
+			if nil != self.tokenStorage {
+				defer func() {
+					if err := recover(); nil != err {
+					}
+				}()
+				//达到最大的batch数量或者token为空说明超时了提交
+				if len(batch) >= cap(batch) || len(token) <= 0 {
+					self.tokenStorage.Save(batch)
+					//这里是里面最后存储不合法的token
+					log.WarnLog("push_client", "APNSCLIENT|UnImplement StoreInvalidToken|%v", batch)
+					batch = batch[:0]
+				}
+
+				if len(token) > 0 {
+					batch = append(batch, token)
+				}
+			}
+		}()
+
+	}
 }

@@ -21,14 +21,16 @@ type ApnsClient struct {
 	running         bool
 	maxttl          uint8
 	storage         entry.IMessageStorage
-	sendCounter     *entry.Counter
-	failCounter     *entry.Counter
-	resendCounter   *entry.Counter
+	tokenStorage    entry.ITokenStorage
+
+	sendCounter   *entry.Counter
+	failCounter   *entry.Counter
+	resendCounter *entry.Counter
 }
 
 func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 	feedbackChan chan<- *entry.Feedback, feedbackGateWay string,
-	storage entry.IMessageStorage) *ApnsClient {
+	storage entry.IMessageStorage, tokenStorage entry.ITokenStorage) *ApnsClient {
 
 	//发送失败后的响应channel
 	respChan := make(chan *entry.Response, 1000)
@@ -52,20 +54,25 @@ func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
 		return nil
 	}
 
-	return newApnsClient(factory, feedbackFactory, storage, respChan)
+	return newApnsClient(factory, feedbackFactory, storage, tokenStorage, respChan)
 }
 
-func NewApnsClient(factory IConnFactory, feedbackFactory IConnFactory, storage entry.IMessageStorage) *ApnsClient {
+func NewApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
+	storage entry.IMessageStorage, tokenStorage entry.ITokenStorage) *ApnsClient {
 	//发送失败后的响应channel
 	respChan := make(chan *entry.Response, 1000)
-	return newApnsClient(factory, feedbackFactory, storage, respChan)
+	return newApnsClient(factory, feedbackFactory, storage, tokenStorage, respChan)
 }
 
 func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
-	storage entry.IMessageStorage, responseChannel chan *entry.Response) *ApnsClient {
+	storage entry.IMessageStorage, tokenStorage entry.ITokenStorage,
+	responseChannel chan *entry.Response) *ApnsClient {
 
 	client := &ApnsClient{factory: factory, feedbackFactory: feedbackFactory,
-		running: true, maxttl: 3, storage: storage, sendCounter: &entry.Counter{}, failCounter: &entry.Counter{}, resendCounter: &entry.Counter{}}
+		running: true, maxttl: 3, storage: storage,
+		tokenStorage: tokenStorage,
+		sendCounter:  &entry.Counter{}, failCounter: &entry.Counter{},
+		resendCounter: &entry.Counter{}}
 	go func() {
 		for client.running {
 			aa, ac, am := factory.MonitorPool()
@@ -134,6 +141,15 @@ func (self *ApnsClient) SendEnhancedNotification(expiriedTime uint32, deviceToke
 
 func (self *ApnsClient) sendMessage(msg *entry.Message) error {
 	var sendError error
+
+	token := entry.UmarshalToken(msg)
+
+	//check token
+	//如果在token存储中存在这个说明token 不可用，不必发送
+	if nil != self.tokenStorage && self.tokenStorage.Exist(token) {
+		return errors.New(fmt.Sprintf("Invalid Token %s", token))
+	}
+
 	//重发逻辑
 	for i := 0; i < 3; i++ {
 
