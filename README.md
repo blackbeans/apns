@@ -77,6 +77,8 @@ Http方式发送IOS PUSH
         pprofPort := flag.String("pprof", ":9090", "-pprof=:9090 //端口")
         configPath := flag.String("configPath", "", "-configPath=conf/go_apns_moa.toml //moa启动的配置文件")
         serverMode := flag.String("serverMode", "http", "-serverMode=http/moa //http或者moa方式启动")
+        tokenStorage := flag.String("tokenStorage", "",
+        "redis://addrs=localhost:6379,localhost:6379&expiredSec=86400 //非法token的存储")
         flag.Parse()
 
 ####MOA Client端发起调用
