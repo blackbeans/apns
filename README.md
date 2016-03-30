@@ -15,8 +15,8 @@
 	ab c=100 n=1000000 12952.80 op
 ============
 #### 安装
-    go get github.com/blackbeans/go-apns
-    go install github/com/blackbeans/go-apns
+    sh build.sh
+    编译后的go-apns直接可用作为独立服务不是即可
 
 quick start
 ============
