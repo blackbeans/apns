@@ -4,6 +4,7 @@ import (
 	log "github.com/blackbeans/log4go"
 	"go-apns/entry"
 	"math/rand"
+	"sort"
 	"time"
 )
 
@@ -102,7 +103,9 @@ func (self *ApnsClient) storeInvalidToken(ch chan string) {
 					}
 				}()
 				//达到最大的batch数量或者token为空说明超时了提交
-				if len(batch) >= cap(batch) || len(token) <= 0 {
+				if (len(batch) >= cap(batch) || len(token) <= 0) &&
+					len(batch) > 0 {
+
 					self.tokenStorage.Save(batch)
 					//这里是里面最后存储不合法的token
 					log.WarnLog("push_client", "APNSCLIENT|UnImplement StoreInvalidToken|%v", batch)
@@ -110,7 +113,15 @@ func (self *ApnsClient) storeInvalidToken(ch chan string) {
 				}
 
 				if len(token) > 0 {
-					batch = append(batch, token)
+					//查找是否存在
+					idx := sort.SearchStrings(batch, token)
+					//如果返回的idx是batch的长度则代表不存在
+					//添加
+					if idx == len(batch) {
+						batch = append(batch, token)
+						sort.Strings(batch)
+					}
+
 				}
 			}
 		}()

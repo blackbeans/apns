@@ -98,14 +98,15 @@ func UmarshalIdentifier(msg *Message) uint32 {
 func UmarshalToken(msg *Message) string {
 	if msg.MsgType == MESSAGE_TYPE_ENHANCED {
 		//enchanced 的token位于第2个item
-		tokenItem := msg.items[1]
+		tokenItem := msg.items[2]
 		token := tokenItem.data.([]uint8)
 		return hex.EncodeToString(token)
 
 	} else if msg.MsgType == MESSAGE_TYPE_SIMPLE {
 		//simple类型的token位于第一个item
-		tokenItem := msg.items[0]
-		return tokenItem.data.(string)
+		tokenItem := msg.items[1]
+		token := tokenItem.data.([]uint8)
+		return hex.EncodeToString(token)
 	}
 	//this is a bug
 	return ""

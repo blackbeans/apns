@@ -12,43 +12,54 @@ type ITokenStorage interface {
 
 type TokenStorage struct {
 	storage        *redis.Client
+	slaveStorage   *redis.Client
 	master, slave  string
 	expiredSeconds int64
 }
 
 func NewTokenStorage(expiredSeconds int64, master, slave string) ITokenStorage {
 
-	storage := redis.NewFailoverClient(&redis.FailoverOptions{
-		MasterName:    master,
-		SentinelAddrs: []string{slave},
-		DialTimeout:   30 * time.Second,
-		ReadTimeout:   5 * time.Second,
-		WriteTimeout:  5 * time.Second,
-		PoolSize:      30,
-		PoolTimeout:   0,
-		IdleTimeout:   60 * time.Second,
-		MaxRetries:    3,
+	storage := redis.NewClient(&redis.Options{
+		Addr:         master,
+		DialTimeout:  30 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		PoolSize:     30,
+		PoolTimeout:  0,
+		IdleTimeout:  60 * time.Second,
+		MaxRetries:   3,
 	})
 
-	return &TokenStorage{storage: storage,
+	slaveStorage := redis.NewClient(&redis.Options{
+		Addr:         slave,
+		DialTimeout:  30 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		PoolSize:     30,
+		PoolTimeout:  0,
+		IdleTimeout:  60 * time.Second,
+		MaxRetries:   3,
+	})
+
+	return &TokenStorage{storage: storage, slaveStorage: slaveStorage,
 		master: master, slave: slave, expiredSeconds: expiredSeconds}
 
 }
 
 func (self *TokenStorage) Exist(token string) bool {
-
-	t, _ := self.storage.Exists(token).Result()
+	t, _ := self.slaveStorage.Exists(token).Result()
 	return t
 
 }
 
 func (self *TokenStorage) Save(token []string) {
-
-	p := self.storage.Pipeline()
-	for _, t := range token {
-		//save invalid token
-		p.Set(t, nil, time.Duration(self.expiredSeconds*int64(time.Second)))
+	if len(token) > 0 {
+		p := self.storage.Pipeline()
+		for _, t := range token {
+			//save invalid token
+			p.Set(t, nil, time.Duration(self.expiredSeconds*int64(time.Second)))
+		}
+		//默认就成成功了吧
+		p.Exec()
 	}
-	//默认就成成功了吧
-	p.Exec()
 }
