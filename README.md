@@ -1,8 +1,10 @@
 #### go实现的apns 提供https、redis协议方式的发送IOS Push服务
-    单个连接的流控
     连接池的实现
     结合feedback过滤当前现有不合法的apnstoken提高送达率
     提供Https方式的发送ios push
+    提供Go-MOA方式发送PUSH
+    连接断开后自动重发该ID之后发送失败的PUSH
+    提供对APNS返回失效Token的存储和过滤机制保证连接的健康状况，减少断开几率
     more.....
     
 #### mock压测报告 
