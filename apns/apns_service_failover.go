@@ -60,7 +60,7 @@ func (self *ApnsClient) onErrorResponseRecieve(responseChannel chan *entry.Respo
 					token := entry.UmarshalToken(msg)
 					tokenCh <- token
 					// self.storeInvalidToken(token)
-					log.WarnLog("push_client", "APNSCLIENT|INVALID TOKEN|%s", resp.Identifier)
+					log.WarnLog("push_client", "APNSCLIENT|INVALID TOKEN|%s", token)
 				}
 			}
 		}
