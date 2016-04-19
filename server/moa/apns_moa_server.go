@@ -146,5 +146,27 @@ func (self ApnsServer) SendNotification(pushType byte, params ApnsParams) (bool,
 	return nil == err, err
 }
 func (self ApnsServer) QueryFeedback(limit int) ([]entry.Feedback, error) {
-	return nil, nil
+	
+		//本次获取多少个feedback
+		if limit > 100 {
+			return nil,errors.New("limit must be less than 100")
+		} else {
+			//发起了获取feedback的请求
+			err := self.apnsClient.FetchFeedback(int(limit))
+			if nil != err {
+				return nil,err
+			} else {
+				//等待feedback数据
+				packet := make([]entry.Feedback, 0, limit)
+				var feedback *entry.Feedback
+				for ; limit > 0; limit-- {
+					feedback = <-self.feedbackChan
+					if nil == feedback {
+						break
+					}
+					packet = append(packet, *feedback)
+				}
+				return packet,nil
+			}
+		}
 }
