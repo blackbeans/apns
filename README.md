@@ -1,27 +1,27 @@
-#### go实现的apns 提供https、redis协议方式的发送IOS Push服务
-    连接池的实现
-    结合feedback过滤当前现有不合法的apnstoken提高送达率
-    提供Https方式的发送ios push
-    提供Go-MOA方式发送PUSH
-    连接断开后自动重发该ID之后发送失败的PUSH
-    提供对APNS返回失效Token的存储和过滤机制保证连接的健康状况，减少断开几率
-    more.....
+
+go-apns is apple apns libary providing redis and http protocol to use 
+
+####  feature:
+    connection pool 
+    [go-moa](https://github.com/blackbeans/go-apns) interface
+    http protocol interface
+    invalid token filted for reducing the rate of connection broken
+    message resend while recieved fail information
     
-#### mock压测报告 
-	4 * 2CPU /8GBRAM/50个apns链接
-	http ab压测：
+#### mock benchmark：
+	4 * 2CPU /8GBRAM/50 apns connections
+	http ab benchmark：
 	ab c=10 n=1000000  8609.94 ops 
 	ab c=50 n=1000000  12146.87 ops
 	ab c=100 n=1000000 12952.80 op
 ============
-#### 安装
+#### install
     sh build.sh
-    编译后的go-apns直接可用作为独立服务不是即可
 
 quick start
 ============
 
-#### 加载证书初始化apns
+#### load and initial apns server
     cert, err := tls.LoadX509KeyPair(CERT_PATH, KEY_PATH)
     if nil != err {
     t.Logf("READ CERT FAIL|%s", err.Error())
@@ -37,19 +37,18 @@ quick start
 	client := NewDefaultApnsClient(cert, responseChan, PUSH_APPLE, feedbackChan, FEED_BACK_APPLE)
 	
 	
-#####开始发送
-	//发送enchanced push
+##### send
+	// send enchanced push
 	client.SendEnhancedNotification(1, math.MaxUint32, apnsToken, *payload)
-	//调用读取feedback
+	//read feedback
 	err := client.FetchFeedback()
 	
-##### 读取feedback和response结果
+##### read feedback and response 
 
-	//从channel 中读取数据
+	//recieve response from channel 
 	select {
 		case resp := <-responseChan:
 			t.Logf("RESPONSE===============%t", resp)
-			//如果有返回错误则说明发送失败的
 		case fb := <-feedbackChan:
 			i := 0
 			for i < 100 {
@@ -60,41 +59,43 @@ quick start
 	
 	
 
-Http方式发送IOS PUSH
+Use MOA Protocol  
 ===================
-####Server端使用：
+####Server：
     1. sh build.sh
     2. ./go-apns -startMode=1 -bindAddr=${IP:PORT} -certPath=${HOME}/cert.pem -keyPath=${HOME}/key.pem  -env=1 -pprof=:18070 -serverMode=moa -configPath=./conf/go_apns_moa.toml
 
     参数解释：
-        startMode := flag.Int("startMode", 1, " 0 为mock ,1 为正式")
+        startMode := flag.Int("startMode", 1, " 0 mock ,1 online")
         bindAddr := flag.String("bindAddr", "", "-bindAddr=:17070")
         certPath := flag.String("certPath", "./cert.pem", "-certPath=xxxxxx/cert.pem or -certPath=http://")
         keyPath := flag.String("keyPath", "./key.pem", "-keyPath=xxxxxx/key.pem or -keyPath=http://")
         env := flag.Int("env", 0, "-env=1(online) ,0(sandbox)")
-        storeCap := flag.Int("storeCap", 1000, "-storeCap=100000  //重发链条长度")
-        logxml := flag.String("log", "./conf/log.xml", "-log=./conf/log.xml //log配置文件")
+        storeCap := flag.Int("storeCap", 1000, "-storeCap=100000  //resender queue length")
+        logxml := flag.String("log", "./conf/log.xml", "-log=./conf/log.xml //log config")
         pprofPort := flag.String("pprof", ":9090", "-pprof=:9090 //端口")
-        configPath := flag.String("configPath", "", "-configPath=conf/go_apns_moa.toml //moa启动的配置文件")
-        serverMode := flag.String("serverMode", "http", "-serverMode=http/moa //http或者moa方式启动")
+        configPath := flag.String("configPath", "", "-configPath=conf/go_apns_moa.toml //moa config file")
+        serverMode := flag.String("serverMode", "http", "-serverMode=http/moa // using http/moa server ")
         tokenStorage := flag.String("tokenStorage", "",
-        "redis://addrs=localhost:6379,localhost:6379&expiredSec=86400 //非法token的存储")
+        "redis://addrs=localhost:6379,localhost:6379&expiredSec=86400 //invalid token storage")
         flag.Parse()
 
 ####MOA Client端发起调用
-    go get git.wemomo.com/bibi/go-moa-client/client
-    go get git.wemomo.com/bibi/go-moa/proxy
-    go install  git.wemomo.com/bibi/go-moa-client/client
-    go install  git.wemomo.com/bibi/go-moa/proxy
 
-服务的URI为：
-    /service/bibi/apns-service
-客户端代码：
+    go get github.com/blackbeans/go-moa-client/client
+    go get github.com/blackbeans/go-moa/proxy
+    go install  github.com/blackbeans/go-moa-client/client
+    go install  github.com/blackbeans/go-moa/proxy
+
+service uri ：
+    /service/apns-service
+ 
+client ：
     
     package main
     import (
-        "git.wemomo.com/bibi/go-moa-client/client"
-        "git.wemomo.com/bibi/go-moa/proxy"
+        "github.com/blackbeans/go-moa-client/client"
+        "github.com/blackbeans/go-moa/proxy"
     )
     
     //apns发送的参数
@@ -123,7 +124,7 @@ Http方式发送IOS PUSH
     
     }
 
-注：go_moa_client.toml [文件参考](http://github.com/blackbeans/go-moa-client/blob/master/conf/moa_client.toml)
+note：go_moa_client.toml [ref](http://github.com/blackbeans/go-moa-client/blob/master/conf/moa_client.toml)
 
 
 
@@ -131,9 +132,9 @@ Http方式发送IOS PUSH
  
 
 
-####HTTP Client端发起调用
-    发送PUSH的POST协议：
-    请求REQ：
+#### Use HTTP Protocol
+    send push by post 
+    REQ：
         http://localhost:7070/apns/push
         pushType:= req.PostFormValue("pt") //notification 的类型
     
@@ -145,28 +146,28 @@ Http方式发送IOS PUSH
         sound := req.PostFormValue("sound")
         badgeV := req.PostFormValue("badge")
         body := req.PostFormValue("body")
-        //是个大的Json数据即可
+        //extral Json data
         extArgs := req.PostFormValue("extArgs")
         RESP：
-        //---------定义返回状态码
-        RESP_STATUS_SUCC                            = 200 //成功
-        RESP_STATUS_ERROR                           = 500 //服务器端错误
-        RESP_STATUS_INVALID_PROTO                   = 201 //不允许使用GET 请求发送数据
-        RESP_STATUS_PUSH_ARGUMENTS_INVALID          = 400 //请求参数错误
-        RESP_STATUS_INVALID_NOTIFY_FORMAT           = 501   //错误的NotificationFormat类型
-        RESP_STATUS_PAYLOAD_BODY_DECODE_ERROR       = 505 //payload 的body   存在反序列化失败的问题
-        RESP_STATUS_PAYLOAD_BODY_DEEP_ITERATOR      = 505 //payload 的body   不允许多层嵌套
-        RESP_STATUS_SEND_OVER_TRY_ERROR             = 506 //推送到IOS PUSH     重试3次后失败
-        RESP_STATUS_FETCH_FEEDBACK_OVER_LIMIT_ERROR = 507   //获取feedback的数量超过最大限制
-        获取Feedback协议：
+        //---------status code
+        RESP_STATUS_SUCC                            = 200 //succ
+        RESP_STATUS_ERROR                           = 500 //fail
+        RESP_STATUS_INVALID_PROTO                   = 201 //GET not supported
+        RESP_STATUS_PUSH_ARGUMENTS_INVALID          = 400 //invalid request params 
+        RESP_STATUS_INVALID_NOTIFY_FORMAT           = 501 //invalid NotificationFormat type
+        RESP_STATUS_PAYLOAD_BODY_DECODE_ERROR       = 505 //payload deserilaized fail 
+        RESP_STATUS_PAYLOAD_BODY_DEEP_ITERATOR      = 505 //payload body is complex
+        RESP_STATUS_SEND_OVER_TRY_ERROR             = 506 //send fail over try
+        RESP_STATUS_FETCH_FEEDBACK_OVER_LIMIT_ERROR = 507 //over limit
+        Feedback：
         GET ：
         REQ： http://localhost:7070/apns/feedback?limit=50
-        RESP：返回指定数量的feedback 
+        RESP：feedback 
             feedback: 
                 time uint32
                 devicetoken string
         NOTE :
-            limit服务端最大每次可拉取 100条。
+            limit is less than 100
 
 
 
