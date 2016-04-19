@@ -80,7 +80,7 @@ Use MOA Protocol
         "redis://addrs=localhost:6379,localhost:6379&expiredSec=86400 //invalid token storage")
         flag.Parse()
 
-####MOA Client端发起调用
+####MOA Client
 
     go get github.com/blackbeans/go-moa-client/client
     go get github.com/blackbeans/go-moa/proxy
@@ -98,7 +98,7 @@ client ：
         "github.com/blackbeans/go-moa/proxy"
     )
     
-    //apns发送的参数
+    //apns params
     type ApnsParams struct {
         ExpSeconds int                    `json:"expiredSeconds"`
         Token      string                 `json:"token"`
