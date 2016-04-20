@@ -24,8 +24,11 @@ type ApnsClient struct {
 	tokenStorage    entry.ITokenStorage
 
 	sendCounter   *entry.Counter
+	lastSendCount int
 	failCounter   *entry.Counter
+	lastFailCount int
 	resendCounter *entry.Counter
+	lastResendCount int
 }
 
 func NewDefaultApnsClient(cert tls.Certificate, pushGateway string,
@@ -78,9 +81,12 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 			aa, ac, am := factory.MonitorPool()
 			fa, fc, fm := feedbackFactory.MonitorPool()
 			storageCap := client.storage.Length()
+			client.lastSendCount = client.sendCounter.Changes()
+			client.lastFailCount = client.failCounter.Changes()
+			client.lastResendCount = client.resendCounter.Changes()
 			log.InfoLog("apns_pool", "APNS-POOL|%d/%d/%d\tFEEDBACK-POOL/%d/%d/%d\tdeliver/fail:%d/%d\tstorageLen:%d\tresend:%d",
 				aa, ac, am, fa, fc, fm,
-				client.sendCounter.Changes(), client.failCounter.Changes(), storageCap, client.resendCounter.Changes())
+				client.lastSendCount , client.lastFailCount, storageCap,client.lastResendCount)
 			time.Sleep(1 * time.Second)
 		}
 	}()
@@ -93,6 +99,9 @@ func newApnsClient(factory IConnFactory, feedbackFactory IConnFactory,
 
 type ApnsMonitor struct {
 	PoolStat map[string]int `json:"pool_stat"`
+	LastSendCount int `json:"last_send_count"`
+	LastFailCount int `json:"last_fail_count"`
+	LastResendCount int `json:"last_resend_count"`
 }
 
 func (self *ApnsClient) Monitor() ApnsMonitor {
@@ -101,7 +110,8 @@ func (self *ApnsClient) Monitor() ApnsMonitor {
 	dc["work_pool"] = wp
 	dc["idle_pool"] = ip
 	dc["max_pool"] = mp
-	return ApnsMonitor{dc}
+	am :=ApnsMonitor{dc,self.lastSendCount,self.lastFailCount,self.lastResendCount}
+	return am
 }
 
 //发送简单的notification
