@@ -172,7 +172,7 @@ note：go_moa_client.toml [ref](http://github.com/blackbeans/go-moa-client/blob/
 
 #### Donate
 
-![image](github.com/blackbeans/kiteq/blob/master/doc/qcode.png)
+![image](https://github.com/blackbeans/kiteq/blob/master/doc/qcode.png)
 
 
 
