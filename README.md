@@ -170,6 +170,10 @@ note：go_moa_client.toml [ref](http://github.com/blackbeans/go-moa-client/blob/
             limit is less than 100
 
 
+#### Donate
+
+![image](github.com/blackbeans/kiteq/blob/master/doc/qcode.png)
+
 
 
 
