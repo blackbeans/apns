@@ -2,11 +2,16 @@
 go-apns is apple apns libary providing redis and http protocol to use 
 
 ####  feature:
-    connection pool 
-    [go-moa](https://github.com/blackbeans/go-apns) interface
-    http protocol interface
-    invalid token filted for reducing the rate of connection broken
-    message resend while recieved fail information
+
+connection pool 
+    
+[go-moa](https://github.com/blackbeans/go-apns) interface
+    
+http protocol interface
+    
+support Invalid token filter
+    
+message resend 
     
 #### mock benchmark：
 	4 * 2CPU /8GBRAM/50 apns connections
