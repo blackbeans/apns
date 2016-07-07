@@ -90,7 +90,7 @@ func main() {
 		apnsserver.Shutdown()
 	}
 	if nil != app {
-		app.Destory()
+		app.Destroy()
 	}
 
 	log.Info("APNS SERVER IS STOPPED!")

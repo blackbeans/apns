@@ -59,8 +59,8 @@ func NewBootstrap(configPath string, option server.Option,
 	return &Bootstrap{service: server, app: app}
 }
 
-func (self *Bootstrap) Destory() {
-	self.app.DestoryApplication()
+func (self *Bootstrap) Destroy() {
+	self.app.DestroyApplication()
 }
 
 //-------------真正实现的
