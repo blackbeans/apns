@@ -28,6 +28,15 @@ type Application struct {
 }
 
 func NewApplcation(configPath string, bundle ServiceBundle) *Application {
+	return NewApplicationWithAlarm(configPath, bundle,
+		func(serviceUri, hostname string, moaInfo log4moa.MoaInfo) {
+			//do nothing
+		})
+}
+
+//with alarm
+func NewApplicationWithAlarm(configPath string, bundle ServiceBundle,
+	monitor func(serviceUri, host string, moainfo log4moa.MoaInfo)) *Application {
 	services := bundle()
 
 	options, err := LoadConfiruation(configPath)
@@ -64,11 +73,8 @@ func NewApplcation(configPath string, bundle ServiceBundle) *Application {
 	app.options = options
 	app.configCenter = configCenter
 	//moastat
-	moaStat := log4moa.NewMoaStat(func() string {
-		s := app.remoting.NetworkStat()
-		return fmt.Sprintf("R:%dKB/%d\tW:%dKB/%d\tGo:%d\tCONN:%d", s.ReadBytes/1024,
-			s.ReadCount,
-			s.WriteBytes/1024, s.WriteCount, s.DispatcherGo, s.Connections)
+	moaStat := log4moa.NewMoaStat(options.hostport, services[0].ServiceUri, monitor, func() turbo.NetworkStat {
+		return app.remoting.NetworkStat()
 
 	})
 	app.moaStat = moaStat
@@ -93,7 +99,7 @@ func NewApplcation(configPath string, bundle ServiceBundle) *Application {
 
 	//注册服务
 	configCenter.RegisteAllServices()
-	log.InfoLog("moa-server", "Application|Start|SUCC|%s", name)
+	log.InfoLog("moa-server", "Application|Start|SUCC|%s|%s", name, options.hostport)
 	return app
 }
 
@@ -121,7 +127,7 @@ func packetDispatcher(self *Application, remoteClient *client.RemotingClient, p 
 		if nil != err {
 			log.ErrorLog("moa-server", "Application|packetDispatcher|Wrap2MoaRequest|FAIL|%s|%s", err, string(p.Data))
 		} else {
-
+			req.Source = remoteClient.RemoteAddr()
 			req.Channel = remoteClient.AttachChannel
 			req.Timeout = self.options.processTimeout
 			result := self.invokeHandler.Invoke(req)

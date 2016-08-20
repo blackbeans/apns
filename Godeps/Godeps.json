@@ -1,27 +1,27 @@
 {
 	"ImportPath": "go-apns",
 	"GoVersion": "go1.6",
-	"GodepVersion": "v73",
+	"GodepVersion": "v74",
 	"Deps": [
 		{
 			"ImportPath": "github.com/blackbeans/go-moa/core",
-			"Rev": "0fbeb9ef60fcc5d2d18218fb23b069891579fe0a"
+			"Rev": "0f3fdc0227086d00940c4a57d141e90908dc0c57"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/go-moa/lb",
-			"Rev": "0fbeb9ef60fcc5d2d18218fb23b069891579fe0a"
+			"Rev": "0f3fdc0227086d00940c4a57d141e90908dc0c57"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/go-moa/log4moa",
-			"Rev": "0fbeb9ef60fcc5d2d18218fb23b069891579fe0a"
+			"Rev": "0f3fdc0227086d00940c4a57d141e90908dc0c57"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/go-moa/protocol",
-			"Rev": "0fbeb9ef60fcc5d2d18218fb23b069891579fe0a"
+			"Rev": "0f3fdc0227086d00940c4a57d141e90908dc0c57"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/go-moa/proxy",
-			"Rev": "0fbeb9ef60fcc5d2d18218fb23b069891579fe0a"
+			"Rev": "0f3fdc0227086d00940c4a57d141e90908dc0c57"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/go-zookeeper/zk",
@@ -34,27 +34,27 @@
 		},
 		{
 			"ImportPath": "github.com/blackbeans/turbo",
-			"Rev": "2ffd4b6795c56ffa1033f5cca142a0e48c61b282"
+			"Rev": "15bcd182ebdbc958f31262361fb8e1434741ffbd"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/turbo/client",
-			"Rev": "2ffd4b6795c56ffa1033f5cca142a0e48c61b282"
+			"Rev": "15bcd182ebdbc958f31262361fb8e1434741ffbd"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/turbo/codec",
-			"Rev": "2ffd4b6795c56ffa1033f5cca142a0e48c61b282"
+			"Rev": "15bcd182ebdbc958f31262361fb8e1434741ffbd"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/turbo/packet",
-			"Rev": "2ffd4b6795c56ffa1033f5cca142a0e48c61b282"
+			"Rev": "15bcd182ebdbc958f31262361fb8e1434741ffbd"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/turbo/server",
-			"Rev": "2ffd4b6795c56ffa1033f5cca142a0e48c61b282"
+			"Rev": "15bcd182ebdbc958f31262361fb8e1434741ffbd"
 		},
 		{
 			"ImportPath": "github.com/blackbeans/turbo/session",
-			"Rev": "2ffd4b6795c56ffa1033f5cca142a0e48c61b282"
+			"Rev": "15bcd182ebdbc958f31262361fb8e1434741ffbd"
 		},
 		{
 			"ImportPath": "github.com/go-errors/errors",
@@ -74,6 +74,14 @@
 			"ImportPath": "github.com/naoina/toml/ast",
 			"Comment": "v0.1.0",
 			"Rev": "751171607256bb66e64c9f0220c00662420c38e9"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "76e74a336561c500a376b406eb649727eeb3477f"
+		},
+		{
+			"ImportPath": "golang.org/x/time/rate",
+			"Rev": "a4bde12657593d5e90d0533a3e4fd95e635124cb"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",

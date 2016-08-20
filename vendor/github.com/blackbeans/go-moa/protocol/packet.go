@@ -24,6 +24,7 @@ type MoaRawReqPacket struct {
 		Args   []json.RawMessage `json:"args"`
 	} `json:"params"`
 	Timeout time.Duration    `json:"-"`
+	Source  string           `json:"-"`
 	Channel chan interface{} `json:"-"`
 }
 

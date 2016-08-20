@@ -16,6 +16,8 @@ const (
 	MK_REG_METHOD   = "registerService"
 	MK_UNREG_METHOD = "unregisterService"
 	MK_GET_METHOD   = "getService"
+	//boolean isIsolated(String hostport)
+	MK_ISOLATE_METHOD = "isIsolated"
 )
 
 type momokeeper struct {
@@ -54,16 +56,38 @@ type RegisterResp struct {
 }
 
 func (self momokeeper) RegisteService(serviceUri, hostport, protoType string) bool {
+
+	//is isolate
+	req := &protocol.MoaReqPacket{}
+	req.ServiceUri = MK_SERVICE_URI
+	req.Params.Method = MK_ISOLATE_METHOD
+	args := make([]interface{}, 0, 3)
+	args = append(args, hostport)
+	req.Params.Args = args
+
+	tmp, err := self.invokeResponse(self.regClient, MK_ISOLATE_METHOD, req)
+	if nil != err {
+		log.ErrorLog("config_center", "momokeeper|RegisteService|ISISOLATE|FAIL|%s|%s|%s|%s",
+			err, hostport, serviceUri, protoType)
+	} else {
+		isolate, ok := tmp.(bool)
+		//hostport was isIsolated
+		if ok && isolate {
+			log.InfoLog("config_center", "momokeeper|RegisteService|ISOLATE|%s|%s|%s", hostport, serviceUri, protoType)
+			return true
+		}
+	}
+
 	cmd := &protocol.MoaReqPacket{}
 	cmd.ServiceUri = MK_SERVICE_URI
 	cmd.Params.Method = MK_REG_METHOD
-	args := make([]interface{}, 0, 3)
+	args = make([]interface{}, 0, 3)
 	args = append(args, serviceUri)
 	args = append(args, hostport)
 	args = append(args, protoType)
 	args = append(args, make(map[string]interface{}, 0))
 	cmd.Params.Args = args
-	_, err := self.invokeResponse(self.regClient, MK_REG_METHOD, cmd)
+	_, err = self.invokeResponse(self.regClient, MK_REG_METHOD, cmd)
 	if nil == err {
 		log.InfoLog("config_center", "momokeeper|RegisteService|SUCC|%s|%s|%s", hostport, serviceUri, protoType)
 		return true
@@ -71,7 +95,6 @@ func (self momokeeper) RegisteService(serviceUri, hostport, protoType string) bo
 		log.ErrorLog("config_center", "momokeeper|RegisteService|FAIL|%s|%s|%s|%s", err, hostport, serviceUri, protoType)
 	}
 	return false
-
 }
 
 func (self momokeeper) invokeResponse(c *redis.Client, method string, req *protocol.MoaReqPacket) (interface{}, error) {

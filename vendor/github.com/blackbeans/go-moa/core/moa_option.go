@@ -118,7 +118,7 @@ func LoadConfiruation(path string) (*MOAOption, error) {
 	split := strings.Split(option.Env.BindAddress, ":")
 	regx := split[0]
 
-	addrs, err := net.InterfaceAddrs()
+	inters, err := net.Interfaces()
 	if nil != err {
 		panic(err)
 	} else {
@@ -126,15 +126,19 @@ func LoadConfiruation(path string) (*MOAOption, error) {
 		//如果没有IP匹配表达式则用默认的
 		if len(regx) <= 0 {
 			option.Env.BindAddress = "0.0.0.0:" + split[1]
+			hasMatched = true
 		} else {
-			for _, addr := range addrs {
-				if ip, ok := addr.(*net.IPNet); ok && !ip.IP.IsLoopback() {
-					if nil != ip.IP.To4() {
-						match, _ := regexp.MatchString(regx, ip.IP.To4().String())
-						if match {
-							option.Env.BindAddress = ip.IP.To4().String() + ":" + split[1]
-							hasMatched = true
-							break
+			for _, inter := range inters {
+				addrs, _ := inter.Addrs()
+				for _, addr := range addrs {
+					if ip, ok := addr.(*net.IPNet); ok && !ip.IP.IsLoopback() {
+						if nil != ip.IP.To4() {
+							match, _ := regexp.MatchString(regx, ip.IP.To4().String())
+							if match {
+								option.Env.BindAddress = ip.IP.To4().String() + ":" + split[1]
+								hasMatched = true
+								break
+							}
 						}
 					}
 				}
@@ -142,16 +146,33 @@ func LoadConfiruation(path string) (*MOAOption, error) {
 		}
 		//没有匹配的IP直接用0.0.0.0的IP绑定
 		if !hasMatched {
-			for _, addr := range addrs {
-				if ip, ok := addr.(*net.IPNet); ok && !ip.IP.IsLoopback() {
-					option.Env.BindAddress = ip.IP.To4().String() + ":" + split[1]
-					hasMatched = true
-					break
+			for _, inter := range inters {
+				addrs, _ := inter.Addrs()
+				loopback := false
+				for _, addr := range addrs {
+					ip, ok := addr.(*net.IPNet)
+					if ok && ip.IP.IsLoopback() {
+						loopback = true
+						//skipped
+						break
+					}
+				}
+
+				if !loopback && len(addrs) > 0 {
+					for _, addr := range addrs {
+						if ip, ok := addr.(*net.IPNet); ok &&
+							!ip.IP.IsLoopback() && nil != ip.IP.To4() {
+							option.Env.BindAddress = ip.IP.To4().String() + ":" + split[1]
+							hasMatched = true
+							break
+						}
+					}
 				}
 			}
 
 			if !hasMatched {
 				option.Env.BindAddress = "0.0.0.0" + ":" + split[1]
+
 			}
 		}
 	}

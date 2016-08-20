@@ -146,8 +146,8 @@ func (self InvocationHandler) Invoke(packet *protocol.MoaRawReqPacket) *protocol
 							}
 
 							//TODO LOG ERROR
-							log.ErrorLog("moa-server", "InvocationHandler|Invoke|Call|FAIL|%s|%s|%s|%s|%s",
-								e, packet.ServiceUri, m.Name, params)
+							log.ErrorLog("moa-server", "InvocationHandler|Invoke|Call|FAIL|%s|Source:%s|%s|%s|%s|%s",
+								e, packet.Source, packet.ServiceUri, m.Name, params)
 							resp.Message = fmt.Sprintf(protocol.MSG_INVOCATION_TARGET, e)
 							ir.err = er
 							packet.Channel <- ir
@@ -181,12 +181,12 @@ func (self InvocationHandler) Invoke(packet *protocol.MoaRawReqPacket) *protocol
 
 						}
 					case <-time.After(packet.Timeout):
-						self.moaStat.IncreaseError()
+						self.moaStat.IncreaseTimeout()
 						resp.ErrCode = protocol.CODE_TIMEOUT_SERVER
 						resp.Message = fmt.Sprintf(protocol.MSG_TIMEOUT,
 							packet.ServiceUri+"#"+packet.Params.Method)
-						log.WarnLog("moa-server", "InvocationHandler|Invoke|Call|Timeout[%d]|%s|%s|%v",
-							packet.Timeout/time.Second, packet.ServiceUri, m.Name, params)
+						log.WarnLog("moa-server", "InvocationHandler|Invoke|Call|Source:%s|Timeout[%d]ms|%s|%s|%v",
+							packet.Source, packet.Timeout/time.Millisecond, packet.ServiceUri, m.Name, params)
 					}
 
 				}()
