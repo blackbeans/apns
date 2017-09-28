@@ -124,7 +124,7 @@ func (self *ConnPool) Get() (*ApnsConn, error) {
 	var err error
 	//先从Idealpool中获取如果存在那么就直接使用
 	for e := self.idlePool.Back(); nil != e; e = e.Prev() {
-		conn := e.Value.(*ApnsConn)
+		conn = e.Value.(*ApnsConn)
 		//从idle列表中移除要么是存活的
 		//要么是不存活都需要移除
 		self.idlePool.Remove(e)
