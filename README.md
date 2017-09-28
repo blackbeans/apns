@@ -12,6 +12,8 @@ apns is an apple apns libary for http2
 
 ```shell
 
+	go get golang.org/x/net/http2
+
 	go get github.com/blackbeans/apns
 
 ```
@@ -58,7 +60,7 @@ quick start
 	if nil!=err{
 		//encounter error
 	}else{
-		if notify.Response.StatusCode != 200{
+		if notify.Response.Status != 200{
 			//may send error
 			log.Printf("Response Err %s",notify.Response.Reason)
 
