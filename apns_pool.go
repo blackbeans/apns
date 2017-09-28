@@ -2,26 +2,18 @@ package apns
 
 import (
 	"container/list"
+	"context"
 	"errors"
 	"sync"
-	"sync/atomic"
 	"time"
 
-	log "github.com/blackbeans/log4go"
+	"log"
 )
 
-//连接工厂
-type IConnFactory interface {
-	Get() (error, IConn)            //获取一个连接
-	Release(conn IConn) error       //释放对应的链接
-	ReleaseBroken(conn IConn) error //释放掉坏的连接
-	Shutdown()                      //关闭当前的
-	MonitorPool() (int, int, int)
-}
-
-//apnsconn的连接池
+//connection pool
 type ConnPool struct {
-	dialFunc     func(connectionId int32) (error, IConn)
+	ctx          context.Context
+	dialFunc     func(ctx context.Context) (*ApnsConn, error)
 	maxPoolSize  int           //最大尺子大小
 	minPoolSize  int           //最小连接池大小
 	corepoolSize int           //核心池子大小
@@ -32,55 +24,46 @@ type ConnPool struct {
 
 	running bool
 
-	connectionId int32 //链接的Id
-
 	mutex sync.Mutex //全局锁
-}
-
-type IdleConn struct {
-	conn        IConn
-	expiredTime time.Time
 }
 
 func NewConnPool(minPoolSize, corepoolSize,
 	maxPoolSize int, idletime time.Duration,
-	dialFunc func(connectionId int32) (error, IConn)) (error, *ConnPool) {
+	dialFunc func(ctx context.Context) (*ApnsConn, error)) (*ConnPool, error) {
 
 	pool := &ConnPool{
+		ctx:          context.Background(),
 		maxPoolSize:  maxPoolSize,
 		corepoolSize: corepoolSize,
 		minPoolSize:  minPoolSize,
 		idletime:     idletime,
 		dialFunc:     dialFunc,
 		running:      true,
-		connectionId: 1,
 		idlePool:     list.New(),
 		workPool:     list.New()}
 
 	err := pool.enhancedPool(pool.corepoolSize)
 	if nil != err {
-		return err, nil
+		return nil, err
 	}
 
 	//启动链接过期
 	go pool.evict()
 
-	return nil, pool
+	return pool, nil
 }
 
 func (self *ConnPool) enhancedPool(size int) error {
 
-	//初始化一下最小的Poolsize,让入到idlepool中
 	for i := 0; i < size; i++ {
 		j := 0
 		var err error
-		var conn IConn
+		var conn *ApnsConn
 		for ; j < 3; j++ {
-			err, conn = self.dialFunc(self.id())
+			conn, err = self.dialFunc(self.ctx)
 			if nil != err || nil == conn {
-				log.Warn("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s", err)
+				log.Printf("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s", err)
 				continue
-
 			} else {
 				break
 			}
@@ -89,9 +72,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 		if j >= 3 || nil == conn {
 			return errors.New("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s" + err.Error())
 		}
-
-		idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(self.idletime))}
-		self.idlePool.PushFront(idleconn)
+		self.idlePool.PushFront(conn)
 	}
 
 	return nil
@@ -101,7 +82,6 @@ func (self *ConnPool) evict() {
 	for self.running {
 		time.Sleep(self.idletime)
 		self.checkIdle()
-
 	}
 }
 
@@ -110,21 +90,20 @@ func (self *ConnPool) checkIdle() {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 	for e := self.idlePool.Back(); nil != e; e = e.Prev() {
-		idleconn := e.Value.(*IdleConn)
-		isExpired := idleconn.expiredTime.Before(time.Now())
-		if isExpired {
-			idleconn.conn.Close()
+		idleconn := e.Value.(*ApnsConn)
+		//too long time idle
+		isExpired := time.Since(idleconn.worktime) >= self.idletime
+		if !idleconn.alive || (isExpired &&
+			(self.idlePool.Len()+self.workPool.Len()) > self.corepoolSize) {
+			idleconn.Close()
 			self.idlePool.Remove(e)
 			idleconn = nil
-			log.InfoLog("apns_pool", "POOL_FACTORY|evict|Expired|%d/%d/%d",
-				self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len()))
 		}
 	}
 
-	//检查当前的连接数是否满足corepoolSize,不满足则创建
+	//create more connection
 	enhanceSize := self.corepoolSize - (self.idlePool.Len() + self.workPool.Len())
 	if enhanceSize > 0 {
-		//创建这个数量的连接
 		self.enhancedPool(enhanceSize)
 	}
 }
@@ -133,24 +112,23 @@ func (self *ConnPool) MonitorPool() (int, int, int) {
 	return self.workPool.Len(), self.idlePool.Len(), (self.workPool.Len() + self.idlePool.Len())
 }
 
-func (self *ConnPool) Get() (error, IConn) {
+func (self *ConnPool) Get() (*ApnsConn, error) {
 
 	if !self.running {
-		return errors.New("POOL_FACTORY|POOL IS SHUTDOWN"), nil
+		return nil, errors.New("POOL_FACTORY|POOL IS SHUTDOWN")
 	}
 
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
-	var conn IConn
+	var conn *ApnsConn
 	var err error
 	//先从Idealpool中获取如果存在那么就直接使用
 	for e := self.idlePool.Back(); nil != e; e = e.Prev() {
-		idle := e.Value.(*IdleConn)
-		conn = idle.conn
+		conn := e.Value.(*ApnsConn)
 		//从idle列表中移除要么是存活的
 		//要么是不存活都需要移除
 		self.idlePool.Remove(e)
-		if conn.IsAlive() {
+		if conn.alive {
 			break
 		} else {
 			//归还broken Conn
@@ -163,12 +141,12 @@ func (self *ConnPool) Get() (error, IConn) {
 		//只有当前活动的链接小于最大的则创建
 		if (self.idlePool.Len() + self.workPool.Len()) < self.maxPoolSize {
 			//如果没有可用链接则创建一个
-			err, conn = self.dialFunc(self.id())
+			conn, err = self.dialFunc(self.ctx)
 			if nil != err {
 				conn = nil
 			}
 		} else {
-			return errors.New("POOLFACTORY|POOL|FULL!"), nil
+			return nil, errors.New("POOLFACTORY|POOL|FULL!")
 		}
 	}
 	//放入到工作连接池中去
@@ -176,11 +154,11 @@ func (self *ConnPool) Get() (error, IConn) {
 		self.workPool.PushBack(conn)
 	}
 
-	return err, conn
+	return conn, err
 }
 
 //释放坏的资源
-func (self *ConnPool) ReleaseBroken(conn IConn) error {
+func (self *ConnPool) ReleaseBroken(conn *ApnsConn) error {
 
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
@@ -201,19 +179,18 @@ func (self *ConnPool) ReleaseBroken(conn IConn) error {
 /**
 * 归还当前的连接
 **/
-func (self *ConnPool) Release(conn IConn) error {
+func (self *ConnPool) Release(conn *ApnsConn) error {
 
 	if nil != conn {
-		idleconn := &IdleConn{conn: conn, expiredTime: (time.Now().Add(self.idletime))}
 		self.mutex.Lock()
 		defer self.mutex.Unlock()
 		for e := self.workPool.Back(); nil != e; e = e.Prev() {
 			if e.Value == conn {
-				//如果和当前的一样则从workpool中删除并放入到idle中
+				//move connection from workpool to idlepool
 				self.workPool.Remove(e)
 				//存活的才写入idle
-				if conn.IsAlive() {
-					self.idlePool.PushFront(idleconn)
+				if conn.alive {
+					self.idlePool.PushFront(conn)
 				}
 				break
 			}
@@ -221,11 +198,6 @@ func (self *ConnPool) Release(conn IConn) error {
 	}
 
 	return nil
-}
-
-//生成connectionId
-func (self *ConnPool) id() int32 {
-	return atomic.AddInt32(&self.connectionId, 1)
 }
 
 func (self *ConnPool) Shutdown() {
@@ -240,18 +212,18 @@ func (self *ConnPool) Shutdown() {
 			break
 		}
 
-		log.InfoLog("apns_pool", "CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d", self.workPool.Len())
+		log.Printf("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d\n", self.workPool.Len())
 		i++
 	}
 
-	var idleconn *IdleConn
+	var idleconn *ApnsConn
 	//关闭掉空闲的client
 	for e := self.idlePool.Front(); e != nil; e = e.Next() {
-		idleconn = e.Value.(*IdleConn)
-		idleconn.conn.Close()
+		idleconn = e.Value.(*ApnsConn)
+		idleconn.Close()
 		self.idlePool.Remove(e)
 		idleconn = nil
 	}
 
-	log.InfoLog("apns_pool", "CONNECTION_POOL|SHUTDOWN")
+	log.Println("CONNECTION_POOL|SHUTDOWN")
 }
