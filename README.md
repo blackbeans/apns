@@ -1,16 +1,20 @@
 
-go-apns is apple apns libary providing redis and http protocol to use 
+apns is an apple apns libary for http2
 
 ####  feature:
 
-connection pool 
+* support connection pool 
 
-support Invalid token filter
-    
-message resend 
+* support ping frame using check connection alive
 
 ============
 #### install
+
+```shell
+
+	go get github.com/blackbeans/apns
+
+```
 
 quick start
 ============
@@ -18,52 +22,51 @@ quick start
 #### create  apns client
 
  ```golang   
-    apnsConf := apns.Config{}
-    apnsOption := apns.NewApnsOption(apnsConf)
+	
+	certificate, _ := FromP12File("./push.p12", "xxxx")
 
-	feedback := make(chan *apns.Feedback, 1000)
-	//初始化apns
-	apnsClient := apns.NewDefaultApnsClient(apnsOption.Cert,
-		apnsOption.PushAddr, chan<- *apns.Feedback(feedback),
-		apnsOption.FeedbackAddr,
-		apns.NewCycleLink(3, apnsOption.StorageCapacity))
+	pool, err := NewConnPool(10, 10, 10, 20*time.Second,
+		func(ctx context.Context) (*ApnsConn, error) {
+			conn, err := NewApnsConn(ctx, certificate, URL_PRODUCTION, 10*time.Second)
+			if nil != err {
+				log.Printf("Create Apns Conn Fail %v\n",err)
+			}
+			return conn, err
+	})
+
+	//build notification 
+
+	notify := &Notification{
+			DeviceToken: "your device token",
+			Topic:       "bundleid ",
+			ApnsID:      "uuid",
+			Payload: PayLoad{
+				Aps: Aps{Alert: fmt.Sprintf("hello%d", i)}}}
+	
+	//send push
+
+	c,err:= pool.Get()
+	if nil!=err{
+		//
+	}
+
+	//note : release connection
+	defer pool.Release(c)
+
+	err =c.SendMessage(notify)
+	
+	if nil!=err{
+		//encounter error
+	}else{
+		if notify.Response.StatusCode != 200{
+			//may send error
+			log.Printf("Response Err %s",notify.Response.Reason)
+
+			//maybe u need resent
+		}
+	}
+
 ```
-	
-#### build Payload 
-
-```golang 
-
-    aps := apns.Aps{}
-	aps.Sound = 
-	aps.Badge = 
-	aps.Alert = 
-	
-	//payload
-	payload := apns.NewSimplePayLoadWithAps(aps)
-
-``` 
-
-##### Try Send Push
-
-```golang
-
-	// send enchanced push
-	apnsClient.SendEnhancedNotification(1, math.MaxUint32, apnsToken, *payload)
-
-```
-	
-
-
-#### Donate
-
-![image](https://github.com/blackbeans/kiteq/blob/master/doc/qcode.png)
-
-#### Contact us 
-
-Mail: blackbeans.zc@gmail.com
-
-QQ: 136448723
-
 
 
 
