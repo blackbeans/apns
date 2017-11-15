@@ -45,7 +45,7 @@ type Alert struct {
 type Aps struct {
 	Alert string `json:"alert,omitempty"`
 	Badge int    `json:"badge,omitempty"` //显示气泡数
-	Sound string `json:"sound,omitempty"` //控制push弹出的声音
+	Sound string `json:"sound"`           //控制push弹出的声音
 }
 
 type PayLoad struct {
