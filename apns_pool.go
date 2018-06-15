@@ -78,6 +78,7 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 		conn = e.Value.(*ApnsConn)
 		//要么是不存活都需要移除
 		if conn.alive {
+			self.pool.MoveToFront(e)
 			break
 		} else {
 			//归还broken Conn
@@ -103,7 +104,7 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 
 		conn, err = self.dialFunc(self.ctx)
 		if nil == err && nil != conn {
-			self.pool.PushBack(conn)
+			self.pool.PushFront(conn)
 		}
 	}
 	self.mutex.Unlock()
