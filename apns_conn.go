@@ -12,8 +12,8 @@ import (
 	"net"
 	"net/http"
 	"time"
-
 	"golang.org/x/net/http2"
+	"github.com/blackbeans/log4go"
 )
 
 const (
@@ -93,7 +93,39 @@ func NewApnsConn(
 		cert:            tlsConfig,
 		hostport:        hostport,
 		keepalivePeriod: keepalivePeriod}
-	return conn, conn.Open()
+	err := conn.Open()
+	go conn.keepalive()
+	return conn, err
+}
+
+//keepalive
+func(self *ApnsConn) keepalive(){
+
+		ticker := time.NewTicker(5 * time.Second)
+		for self.alive {
+			select {
+			case <-ticker.C:
+				//send ping if connection is  still alive and connection is idle for half of keepalivePeriod
+				if nil != self.c && self.alive &&
+					time.Since(self.worktime) > self.keepalivePeriod {
+					err := self.c.Ping(self.ctx)
+					if nil != err {
+						log4go.WarnLog("service","CheckAlive|%s|Ping|FAIL|...",self.hostport)
+						self.close0()
+						//重新连接
+						self.Open()
+					} else {
+						log4go.DebugLog("service","CheckAlive|%s|Ping|SUCC|...",self.hostport)
+						break
+					}
+				}
+			case <-self.ctx.Done():
+				ticker.Stop()
+				if nil != self.c {
+					self.Destroy()
+				}
+			}
+		}
 }
 
 //打开apns的链接
@@ -128,32 +160,8 @@ func (self *ApnsConn) Open() error {
 	self.c = h2c
 	self.conn = conn
 	self.alive = true
+	log.Printf("Reconnect Apns|SUCC|...")
 
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		for self.alive {
-			select {
-			case <-ticker.C:
-				//send ping if connection is  still alive and connection is idle for half of keepalivePeriod
-				if nil != self.c && self.alive &&
-					time.Since(self.worktime) > self.keepalivePeriod {
-					err := self.c.Ping(self.ctx)
-					if nil != err {
-						log.Printf("CheckAlive|Ping|SUCC|...")
-						self.Close()
-					} else {
-						log.Printf("CheckAlive|Ping|SUCC|...")
-						break
-					}
-				}
-			case <-self.ctx.Done():
-				ticker.Stop()
-				if nil != self.c {
-					self.Close()
-				}
-			}
-		}
-	}()
 	return nil
 }
 
@@ -214,10 +222,15 @@ func setHeaders(r *http.Request, n *Notification) {
 	}
 }
 
-func (self *ApnsConn) Close() {
-	self.cancel()
+func(self *ApnsConn) close0(){
 	if self.alive {
 		self.alive = false
 		self.conn.Close()
 	}
+}
+
+func (self *ApnsConn) Destroy() {
+	self.cancel()
+	self.close0()
+
 }
