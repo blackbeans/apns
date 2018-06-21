@@ -17,15 +17,18 @@ type ConnPool struct {
 	poolSize     int           //最小连接池大小
 	pool *list.List //当前正在工作的client
 	running bool
-
+	cancel context.CancelFunc
 	mutex sync.RWMutex //全局锁
 }
 
 func NewConnPool(poolSize int,
+	parentCtx context.Context,
 	dialFunc func(ctx context.Context) (*ApnsConn, error)) (*ConnPool, error) {
 
+	ctx,cancel := context.WithCancel(parentCtx)
 	pool := &ConnPool{
-		ctx:      context.Background(),
+		ctx:      ctx,
+		cancel:cancel,
 		poolSize: poolSize,
 		dialFunc: dialFunc,
 		running:  true,
@@ -117,7 +120,7 @@ func (self *ConnPool) Shutdown() {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 	self.running = false
-
+	self.cancel()
 	for i := 0; i < 3; {
 		//等待五秒中结束
 		time.Sleep(5 * time.Second)

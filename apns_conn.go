@@ -86,10 +86,8 @@ func NewApnsConn(
 		tlsConfig.BuildNameToCertificate()
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
 	conn := &ApnsConn{
 		ctx:             ctx,
-		cancel:          cancel,
 		cert:            tlsConfig,
 		hostport:        hostport,
 		keepalivePeriod: keepalivePeriod}
@@ -230,7 +228,6 @@ func(self *ApnsConn) close0(){
 }
 
 func (self *ApnsConn) Destroy() {
-	self.cancel()
 	self.close0()
 
 }
