@@ -84,8 +84,7 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 			self.pool.MoveToFront(e)
 			break
 		} else {
-			//归还broken Conn
-			conn = nil
+			//什么都不干
 		}
 	}
 	self.mutex.RUnlock()
