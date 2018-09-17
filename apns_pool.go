@@ -73,7 +73,8 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 		return nil, errors.New("POOL_FACTORY|POOL IS SHUTDOWN")
 	}
 
-	self.mutex.RLock()
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 
 	var conn *ApnsConn
 	//先从Idealpool中获取如果存在那么就直接使用
@@ -87,13 +88,11 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 			//什么都不干
 		}
 	}
-	self.mutex.RUnlock()
 	//找到一个存活的链接
 	if nil !=conn && conn.alive{
 		return conn,nil
 	}
 
-	self.mutex.Lock()
 	//如果没有找到合格的一个连接，那么主动队列尾部的
 	e := self.pool.Back()
 	conn = e.Value.(*ApnsConn)
@@ -109,7 +108,7 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 			self.pool.PushFront(conn)
 		}
 	}
-	self.mutex.Unlock()
+
 	return conn,err
 }
 
