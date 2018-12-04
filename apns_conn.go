@@ -36,19 +36,29 @@ type Notification struct {
 
 //alert
 type Alert struct {
+	Title        string        `json:"title,omitempty"`
 	Body         string        `json:"body,omitempty"`
+	TitleLocKey  string        `json:"title-loc-key,omitempty"`
+	TitleLocArgs []string      `json:"title-loc-args,omitempty"`
 	ActionLocKey string        `json:"action-loc-key,omitempty"`
 	LocKey       string        `json:"loc-key,omitempty"`
 	LocArgs      []interface{} `json:"loc-args,omitempty"`
+	LaunchImage  string        `json:"launch-image,omitempty"`
 }
 
 type Aps struct {
 	Alert string `json:"alert,omitempty"`
 	Badge int    `json:"badge,omitempty"` //显示气泡数
 	Sound string `json:"sound"`           //控制push弹出的声音
+	ContentAvailable int           `json:"content-available,omitempty"`
+	Category         string        `json:"category,omitempty"`
+	ThreadID         string        `json:"thread-id,omitempty"`
 }
 
+//aps额外的参数
+type ApsExt map[string]interface{}
 type PayLoad struct {
+	ApsExt
 	Aps Aps `json:"aps"`
 }
 
