@@ -56,9 +56,8 @@ type Aps struct {
 }
 
 //aps额外的参数
-type ApsExt map[string]interface{}
 type PayLoad struct {
-	ApsExt
+	OpenExpr string `json:"open_expr"`
 	Aps Aps `json:"aps"`
 }
 
