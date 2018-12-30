@@ -60,7 +60,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 		if j >= 3 || nil == conn {
 			return errors.New("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s" + err.Error())
 		}
-		self.pool.PushFront(conn)
+		self.pool.PushBack(conn)
 	}
 
 	return nil
@@ -93,19 +93,30 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 		return conn,nil
 	}
 
-	//如果没有找到合格的一个连接，那么主动队列尾部的
 	e := self.pool.Back()
-	conn = e.Value.(*ApnsConn)
 	var err error
-	//要么是不存活都需要移除
-	if !conn.alive {
-		//移除队列尾部并主动创建
-		conn.Destroy()
-		self.pool.Remove(e)
+	if nil != e {
+		//如果没有找到合格的一个连接，那么主动队列尾部的
+		conn = e.Value.(*ApnsConn)
 
+		//要么是不存活都需要移除
+		if nil == conn  || !conn.alive {
+			if nil!=conn {
+				//移除队列尾部并主动创建
+				conn.Destroy()
+				self.pool.Remove(e)
+			}
+
+			conn, err = self.dialFunc(self.ctx)
+			if nil == err && nil != conn {
+				self.pool.PushBack(conn)
+			}
+		}
+	}else{
+		//当前没有连接。则创建连接
 		conn, err = self.dialFunc(self.ctx)
 		if nil == err && nil != conn {
-			self.pool.PushFront(conn)
+			self.pool.PushBack(conn)
 		}
 	}
 
