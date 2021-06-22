@@ -12,8 +12,9 @@ import (
 	"net"
 	"net/http"
 	"time"
-	"golang.org/x/net/http2"
+
 	"github.com/blackbeans/log4go"
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -31,34 +32,35 @@ type Notification struct {
 	Expiration  time.Time
 	DeviceToken string
 	Payload     PayLoad
+	ExtParams   map[string]string //自定义参数
 	Response    Response
 }
 
 //alert
 type Alert struct {
-	Title        string        `json:"title,omitempty"`
-	Body         string        `json:"body,omitempty"`
-	TitleLocKey  string        `json:"title-loc-key,omitempty"`
-	TitleLocArgs []string      `json:"title-loc-args,omitempty"`
-	ActionLocKey string        `json:"action-loc-key,omitempty"`
-	LocKey       string        `json:"loc-key,omitempty"`
-	LocArgs      []interface{} `json:"loc-args,omitempty"`
-	LaunchImage  string        `json:"launch-image,omitempty"`
+	Title        string         `json:"title,omitempty"`
+	Body         string         `json:"body,omitempty"`
+	TitleLocKey  *string        `json:"title-loc-key,omitempty"`
+	TitleLocArgs []string       `json:"title-loc-args,omitempty"`
+	ActionLocKey *string        `json:"action-loc-key,omitempty"`
+	LocKey       *string        `json:"loc-key,omitempty"`
+	LocArgs      *[]interface{} `json:"loc-args,omitempty"`
+	LaunchImage  *string        `json:"launch-image,omitempty"`
 }
 
 type Aps struct {
-	Alert string `json:"alert,omitempty"`
-	Badge int    `json:"badge,omitempty"` //显示气泡数
-	Sound string `json:"sound"`           //控制push弹出的声音
-	ContentAvailable int           `json:"content-available,omitempty"`
-	Category         string        `json:"category,omitempty"`
-	ThreadID         string        `json:"thread-id,omitempty"`
+	Alert            *Alert `json:"alert,omitempty"`
+	Badge            int    `json:"badge,omitempty"` //显示气泡数
+	Sound            string `json:"sound"`           //控制push弹出的声音
+	ContentAvailable int    `json:"content-available,omitempty"`
+	Category         string `json:"category,omitempty"`
+	ThreadID         string `json:"thread-id,omitempty"`
 }
 
 //aps额外的参数
 type PayLoad struct {
-	OpenExpr string `json:"open_expr"`
-	Aps Aps `json:"aps"`
+	OpenExpr *string `json:"open_expr,omitempty"`
+	Aps      Aps     `json:"aps"`
 }
 
 //响应结果
@@ -106,33 +108,33 @@ func NewApnsConn(
 }
 
 //keepalive
-func(self *ApnsConn) keepalive(){
+func (self *ApnsConn) keepalive() {
 
-		ticker := time.NewTicker(5 * time.Second)
-		for self.alive {
-			select {
-			case <-ticker.C:
-				//send ping if connection is  still alive and connection is idle for half of keepalivePeriod
-				if nil != self.c && self.alive &&
-					time.Since(self.worktime) > self.keepalivePeriod {
-					err := self.c.Ping(self.ctx)
-					if nil != err {
-						log4go.WarnLog("service","CheckAlive|%s|Ping|FAIL|...",self.hostport)
-						self.close0()
-						//重新连接
-						self.Open()
-					} else {
-						log4go.DebugLog("service","CheckAlive|%s|Ping|SUCC|...",self.hostport)
-						break
-					}
-				}
-			case <-self.ctx.Done():
-				ticker.Stop()
-				if nil != self.c {
-					self.Destroy()
+	ticker := time.NewTicker(5 * time.Second)
+	for self.alive {
+		select {
+		case <-ticker.C:
+			//send ping if connection is  still alive and connection is idle for half of keepalivePeriod
+			if nil != self.c && self.alive &&
+				time.Since(self.worktime) > self.keepalivePeriod {
+				err := self.c.Ping(self.ctx)
+				if nil != err {
+					log4go.WarnLog("service", "CheckAlive|%s|Ping|FAIL|...", self.hostport)
+					self.close0()
+					//重新连接
+					self.Open()
+				} else {
+					log4go.DebugLog("service", "CheckAlive|%s|Ping|SUCC|...", self.hostport)
+					break
 				}
 			}
+		case <-self.ctx.Done():
+			ticker.Stop()
+			if nil != self.c {
+				self.Destroy()
+			}
 		}
+	}
 }
 
 //打开apns的链接
@@ -174,9 +176,25 @@ func (self *ApnsConn) Open() error {
 
 //发送消息
 func (self *ApnsConn) SendMessage(notification *Notification) error {
+
 	data, err := json.Marshal(notification.Payload)
 	if nil != err {
 		return errors.New("Invalid Payload !")
+	}
+
+	if nil != notification.ExtParams && len(notification.ExtParams) > 0 {
+		var mapVal map[string]interface{}
+		err := json.Unmarshal(data, &mapVal)
+		if nil == err {
+			for k, v := range notification.ExtParams {
+				mapVal[k] = v
+			}
+
+			data, err = json.Marshal(mapVal)
+			if nil != err {
+				return errors.New("Invalid Payload !")
+			}
+		}
 	}
 
 	domain, _, _ := net.SplitHostPort(self.hostport)
@@ -229,7 +247,7 @@ func setHeaders(r *http.Request, n *Notification) {
 	}
 }
 
-func(self *ApnsConn) close0(){
+func (self *ApnsConn) close0() {
 	if self.alive {
 		self.alive = false
 		self.conn.Close()
