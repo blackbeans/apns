@@ -120,6 +120,13 @@ func (self *ConnPool) Get() (*ApnsConn, error) {
 	return conn, err
 }
 
+// 获取当前
+func (self *ConnPool) PoolStat() int {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+	return self.pool.Len()
+}
+
 func (self *ConnPool) Shutdown() {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
