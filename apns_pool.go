@@ -6,33 +6,31 @@ import (
 	"errors"
 	"sync"
 	"time"
-
-	"log"
 )
 
-//connection pool
+// connection pool
 type ConnPool struct {
-	ctx          context.Context
-	dialFunc     func(ctx context.Context) (*ApnsConn, error)
-	poolSize     int           //最小连接池大小
-	pool *list.List //当前正在工作的client
-	running bool
-	cancel context.CancelFunc
-	mutex sync.RWMutex //全局锁
+	ctx      context.Context
+	dialFunc func(ctx context.Context) (*ApnsConn, error)
+	poolSize int        //最小连接池大小
+	pool     *list.List //当前正在工作的client
+	running  bool
+	cancel   context.CancelFunc
+	mutex    sync.RWMutex //全局锁
 }
 
 func NewConnPool(poolSize int,
 	parentCtx context.Context,
 	dialFunc func(ctx context.Context) (*ApnsConn, error)) (*ConnPool, error) {
 
-	ctx,cancel := context.WithCancel(parentCtx)
+	ctx, cancel := context.WithCancel(parentCtx)
 	pool := &ConnPool{
 		ctx:      ctx,
-		cancel:cancel,
+		cancel:   cancel,
 		poolSize: poolSize,
 		dialFunc: dialFunc,
 		running:  true,
-		pool: list.New()}
+		pool:     list.New()}
 
 	err := pool.enhancedPool(poolSize)
 	if nil != err {
@@ -50,7 +48,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 		for ; j < 3; j++ {
 			conn, err = self.dialFunc(self.ctx)
 			if nil != err || nil == conn {
-				log.Printf("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s", err)
+				log.Infof("POOL_FACTORY|CREATE CONNECTION|INIT|FAIL|%s", err)
 				continue
 			} else {
 				break
@@ -66,8 +64,7 @@ func (self *ConnPool) enhancedPool(size int) error {
 	return nil
 }
 
-
-func (self *ConnPool) Get() (*ApnsConn,error) {
+func (self *ConnPool) Get() (*ApnsConn, error) {
 
 	if !self.running {
 		return nil, errors.New("POOL_FACTORY|POOL IS SHUTDOWN")
@@ -89,8 +86,8 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 		}
 	}
 	//找到一个存活的链接
-	if nil !=conn && conn.alive{
-		return conn,nil
+	if nil != conn && conn.alive {
+		return conn, nil
 	}
 
 	e := self.pool.Back()
@@ -100,8 +97,8 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 		conn = e.Value.(*ApnsConn)
 
 		//要么是不存活都需要移除
-		if nil == conn  || !conn.alive {
-			if nil!=conn {
+		if nil == conn || !conn.alive {
+			if nil != conn {
 				//移除队列尾部并主动创建
 				conn.Destroy()
 				self.pool.Remove(e)
@@ -112,7 +109,7 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 				self.pool.PushBack(conn)
 			}
 		}
-	}else{
+	} else {
 		//当前没有连接。则创建连接
 		conn, err = self.dialFunc(self.ctx)
 		if nil == err && nil != conn {
@@ -120,10 +117,8 @@ func (self *ConnPool) Get() (*ApnsConn,error) {
 		}
 	}
 
-	return conn,err
+	return conn, err
 }
-
-
 
 func (self *ConnPool) Shutdown() {
 	self.mutex.Lock()
@@ -137,7 +132,7 @@ func (self *ConnPool) Shutdown() {
 			break
 		}
 
-		log.Printf("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d\n", self.pool.Len())
+		log.Infof("CONNECTION POOL|CLOSEING|WORK POOL SIZE|:%d", self.pool.Len())
 		i++
 	}
 
@@ -149,5 +144,5 @@ func (self *ConnPool) Shutdown() {
 		idleconn = nil
 	}
 
-	log.Println("CONNECTION_POOL|SHUTDOWN")
+	log.Info("CONNECTION_POOL|SHUTDOWN")
 }

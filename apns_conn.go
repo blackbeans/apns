@@ -8,12 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/blackbeans/log4go"
+	"github.com/blackbeans/logx"
 	"golang.org/x/net/http2"
 )
 
@@ -23,6 +22,8 @@ const (
 	//正式环境
 	URL_PRODUCTION = "api.push.apple.com:443"
 )
+
+var log = logx.GetLogger("apns")
 
 type Notification struct {
 	Topic       string
@@ -36,7 +37,7 @@ type Notification struct {
 	Response    Response
 }
 
-//alert
+// alert
 type Alert struct {
 	Title        string         `json:"title,omitempty"`
 	Body         string         `json:"body,omitempty"`
@@ -57,19 +58,19 @@ type Aps struct {
 	ThreadID         string `json:"thread-id,omitempty"`
 }
 
-//aps额外的参数
+// aps额外的参数
 type PayLoad struct {
 	OpenExpr *string `json:"open_expr,omitempty"`
 	Aps      Aps     `json:"aps"`
 }
 
-//响应结果
+// 响应结果
 type Response struct {
 	Status int    `json:"status"`
 	Reason string `json:"reason"`
 }
 
-//apns的链接
+// apns的链接
 type ApnsConn struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
@@ -83,7 +84,7 @@ type ApnsConn struct {
 	alive bool //是否存活
 }
 
-//NewApnsConn ...
+// NewApnsConn ...
 func NewApnsConn(
 	ctx context.Context,
 	certificates tls.Certificate,
@@ -107,7 +108,7 @@ func NewApnsConn(
 	return conn, err
 }
 
-//keepalive
+// keepalive
 func (self *ApnsConn) keepalive() {
 
 	ticker := time.NewTicker(5 * time.Second)
@@ -119,12 +120,12 @@ func (self *ApnsConn) keepalive() {
 				time.Since(self.worktime) > self.keepalivePeriod {
 				err := self.c.Ping(self.ctx)
 				if nil != err {
-					log4go.WarnLog("service", "CheckAlive|%s|Ping|FAIL|...", self.hostport)
+					log.Warnf("CheckAlive|%s|Ping|FAIL|...", self.hostport)
 					self.close0()
 					//重新连接
 					self.Open()
 				} else {
-					log4go.DebugLog("service", "CheckAlive|%s|Ping|SUCC|...", self.hostport)
+					log.Debugf("CheckAlive|%s|Ping|SUCC|...", self.hostport)
 					break
 				}
 			}
@@ -137,7 +138,7 @@ func (self *ApnsConn) keepalive() {
 	}
 }
 
-//打开apns的链接
+// 打开apns的链接
 func (self *ApnsConn) Open() error {
 
 	dialer := &net.Dialer{
@@ -169,12 +170,12 @@ func (self *ApnsConn) Open() error {
 	self.c = h2c
 	self.conn = conn
 	self.alive = true
-	log.Printf("Reconnect Apns|SUCC|...")
+	log.Info("Reconnect Apns|SUCC|...")
 
 	return nil
 }
 
-//发送消息
+// 发送消息
 func (self *ApnsConn) SendMessage(notification *Notification) error {
 
 	data, err := json.Marshal(notification.Payload)
@@ -202,13 +203,13 @@ func (self *ApnsConn) SendMessage(notification *Notification) error {
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	if nil != err {
-		log.Printf("CreateReq|FAIL|%v|%s|%s", err, url, string(data))
+		log.Infof("CreateReq|FAIL|%v|%s|%s", err, url, string(data))
 		return err
 	}
 	setHeaders(req, notification)
 	response, err := self.c.RoundTrip(req)
 	if nil != err {
-		log.Printf("FireReq|FAIL|%v|%s|%s", err, url, string(data))
+		log.Infof("FireReq|FAIL|%v|%s|%s", err, url, string(data))
 		return err
 	}
 	defer response.Body.Close()
@@ -220,14 +221,14 @@ func (self *ApnsConn) SendMessage(notification *Notification) error {
 	resp := &Response{}
 	resp.Status = response.StatusCode
 	if err = decoder.Decode(&resp); nil != err && err != io.EOF {
-		log.Printf("UnmarshaldResponse|FAIL|%v|%s|%s", err, url, string(data))
+		log.Infof("UnmarshaldResponse|FAIL|%v|%s|%s", err, url, string(data))
 		return err
 	}
 	notification.Response = *resp
 	return nil
 }
 
-//config header
+// config header
 func setHeaders(r *http.Request, n *Notification) {
 	r.Header.Set("Content-Type", "application/json; charset=utf-8")
 	if n.Topic != "" {
